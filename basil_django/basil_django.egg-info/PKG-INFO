@@ -1,0 +1,13 @@
+Metadata-Version: 1.0
+Name: basil-django
+Version: 0.1
+Summary: Basil template to create a basic django project.
+Home-page: UNKNOWN
+Author: Benjamin Denham
+Author-email: ben.denham@gmail.com
+License: LICENSE.txt
+Description: ============
+        Basil Django
+        ============
+        
+Platform: UNKNOWN

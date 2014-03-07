@@ -1,0 +1,4 @@
+basil
+basil.v0
+basil.v0.templates
+basil.v0.templates.django

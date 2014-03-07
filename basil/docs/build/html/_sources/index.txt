@@ -1,0 +1,50 @@
+..
+    Basil: Build A System Instant-Like
+    Copyright (C) 2014 Catalyst IT Ltd
+    
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+.. Basil documentation master file, created by
+   sphinx-quickstart on Fri Feb 14 14:43:24 2014.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Basil: Build a System Instant-Like
+==================================
+
+Basil is an easy command line tool to spin up development versions of popular
+Python web frameworks e.g. Django, flask, pyramid.
+
+::
+
+    >> basil create django
+
+Contents:
+
+.. toctree::
+   :maxdepth: 2
+
+   motivation
+   usage
+   templates
+   db_managers
+   versioning
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

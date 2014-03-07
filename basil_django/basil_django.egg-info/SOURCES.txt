@@ -1,0 +1,13 @@
+README.txt
+setup.py
+basil/__init__.py
+basil/v0/__init__.py
+basil/v0/templates/__init__.py
+basil/v0/templates/django/__init__.py
+basil/v0/templates/django/v0.py
+basil_django.egg-info/PKG-INFO
+basil_django.egg-info/SOURCES.txt
+basil_django.egg-info/dependency_links.txt
+basil_django.egg-info/namespace_packages.txt
+basil_django.egg-info/requires.txt
+basil_django.egg-info/top_level.txt

@@ -1,0 +1,508 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Templates &mdash; Basil 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Basil 0.1 documentation" href="index.html" />
+    <link rel="next" title="Database Managers" href="db_managers.html" />
+    <link rel="prev" title="Basil Installation and Usage" href="usage.html" />
+    <!--
+    Basil: Build A System Instant-Like
+    Copyright (C) 2014 Catalyst IT Ltd
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    -->
+     
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="db_managers.html" title="Database Managers"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Basil Installation and Usage"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Basil 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="templates">
+<h1>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="creating-a-new-template">
+<h2>Creating a new template<a class="headerlink" href="#creating-a-new-template" title="Permalink to this headline">¶</a></h2>
+<p>This tutorial is intended as a guide for those wishing to create their own
+basil templates. In our demonstration, we will imagine that we are creating a
+template called <tt class="docutils literal"><span class="pre">parrot</span></tt>, that could be installed with
+<tt class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">basil_parrot</span></tt>, and a new project created with
+<tt class="docutils literal"><span class="pre">basil</span> <span class="pre">create</span> <span class="pre">parrot</span></tt>.</p>
+<div class="section" id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h3>
+<p>Please ensure that you have python, setuptools, pip, and basil installed on
+your machine.</p>
+</div>
+<div class="section" id="basic-structure">
+<h3>Basic Structure<a class="headerlink" href="#basic-structure" title="Permalink to this headline">¶</a></h3>
+<p>The structure for our basil package will be as follows:</p>
+<pre class="literal-block">
+basil_parrot/
+    setup.py
+    LICENSE.txt # Should be GPLv3
+    README.txt
+    basil/
+        __init__.py
+        v0/
+            __init__.py
+            templates/
+                __init__.py
+                parrot/
+                    __init__.py
+                    v1.py
+</pre>
+<p>Every <tt class="docutils literal"><span class="pre">__init__.py</span></tt> in the hierarchy should start with the following two
+lines:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pkg_resources</span>
+<span class="n">pkg_resources</span><span class="o">.</span><span class="n">declare_namespace</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>(This is so that many different packages can share the same namespace, via
+Python&#8217;s namespace packaging system).</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You do not need to include these lines in the <tt class="docutils literal"><span class="pre">__init__.py</span></tt> of any
+<tt class="docutils literal"><span class="pre">tests</span></tt> directories.</p>
+</div>
+<p>The contents of <tt class="docutils literal"><span class="pre">setup.py</span></tt> should be as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">find_packages</span>
+
+<span class="n">packages</span> <span class="o">=</span> <span class="n">find_packages</span><span class="p">()</span>
+<span class="n">namespace_packages</span> <span class="o">=</span> <span class="n">packages</span><span class="p">[:]</span>
+<span class="k">for</span> <span class="n">package</span> <span class="ow">in</span> <span class="n">namespace_packages</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">package</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;tests&#39;</span><span class="p">:</span>
+        <span class="n">namespace_packages</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
+
+<span class="n">setup</span><span class="p">(</span>
+      <span class="n">name</span><span class="o">=</span><span class="s">&#39;basil_parrot&#39;</span><span class="p">,</span>
+      <span class="n">version</span><span class="o">=</span><span class="s">&#39;1.0&#39;</span><span class="p">,</span>
+      <span class="n">author</span><span class="o">=</span><span class="s">&#39;Your name&#39;</span><span class="p">,</span>
+      <span class="n">author_email</span><span class="o">=</span><span class="s">&#39;your_address@email.com&#39;</span><span class="p">,</span>
+      <span class="n">packages</span><span class="o">=</span><span class="n">packages</span><span class="p">,</span>
+      <span class="n">namespace_packages</span><span class="o">=</span><span class="n">namespace_packages</span><span class="p">,</span>
+      <span class="n">url</span><span class="o">=</span><span class="s">&#39;http://pypi.python.org/pypi/basil_parrot&#39;</span><span class="p">,</span>
+      <span class="n">license</span><span class="o">=</span><span class="s">&#39;LICENSE.txt&#39;</span><span class="p">,</span>
+      <span class="n">description</span><span class="o">=</span><span class="s">&#39;Basil template to create a parrot project.&#39;</span><span class="p">,</span>
+      <span class="n">long_description</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="s">&#39;README.txt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span>
+      <span class="n">install_requires</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;basil&#39;</span><span class="p">],</span>
+      <span class="p">)</span>
+</pre></div>
+</div>
+<p>All of the actual template code will be contained within a class that inherits
+from <tt class="docutils literal"><span class="pre">BaseTemplate</span></tt>:</p>
+<dl class="class">
+<dt id="basil.v0.base_template.BaseTemplate">
+<em class="property">class </em><tt class="descclassname">basil.v0.base_template.</tt><tt class="descname">BaseTemplate</tt><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base basil project template.
+All prerequisites defined in static methods will be installed before
+any object&#8217;s are created.</p>
+<p>A template&#8217;s docstring will be displayed at the beginning of the project
+creation process, and when &#8216;basil doc&#8217; is run for this template.</p>
+<p>Each template&#8217;s docstring should contain a description of:</p>
+<blockquote>
+<div><ul class="simple">
+<li>What the template is intended for</li>
+<li>What the template will do when creating a project.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+</div>
+<div class="section" id="the-template-class">
+<h3>The Template Class<a class="headerlink" href="#the-template-class" title="Permalink to this headline">¶</a></h3>
+<p>To start our template, place the following code in
+&#8216;basil_parrot/v0/templates/parrot/v1.py&#8217;</p>
+<pre class="literal-block">
+from ...base_template import BaseTemplate
+
+__version__ = '0.1.0'
+
+
+class ParrotTemplate(BaseTemplate):
+    &quot;&quot;&quot;Sets up parrot installation.&quot;&quot;&quot;
+    pass
+</pre>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">For more information on version numbers, see <a class="reference internal" href="versioning.html"><em>Versioning</em></a></p>
+</div>
+<p>In your template class, the following methods must be implemented:</p>
+<blockquote>
+<div><dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.create_project_dir">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">create_project_dir</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.create_project_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.create_project_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should create the project&#8217;s directory inside the current directory,
+and fill it with all necessary files. Exceptions raised in here will
+stop the project creation process, and have their messages displayed to
+the user.
+The project&#8217;s directory should be the value of self.get_name().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.get_readme_file_path">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_readme_file_path</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_readme_file_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_readme_file_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return the path to the readme file relative to the project&#8217;s
+root directory.</p>
+</dd></dl>
+
+</div></blockquote>
+<p>For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">create_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directory_name</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">os</span>
+
+    <span class="c"># Create project folder.</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">directory_name</span><span class="p">)</span>
+
+    <span class="c"># Put an empty file in it.</span>
+    <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory_name</span><span class="p">,</span> <span class="s">&#39;test_file.txt&#39;</span><span class="p">),</span> <span class="s">&#39;a&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">get_readme_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="s">&#39;readme.txt&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="project-settings">
+<h3>Project Settings<a class="headerlink" href="#project-settings" title="Permalink to this headline">¶</a></h3>
+<p>To accept user configuration for the project (such as the project&#8217;s name),
+implement one or more of the following methods in the template class:</p>
+<blockquote>
+<div><dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.default_settings">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">default_settings</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.default_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.default_settings" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.alter_settings">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">alter_settings</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.alter_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.alter_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should make pre-validation alterations to the self.settings
+dictionary. Called after settings have been entered by the user, but
+before they have been validated.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.validate_settings">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">validate_settings</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.validate_settings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.validate_settings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should check values in the self.settings dictionary, and raise
+exceptions if anything is invalid.</p>
+</dd></dl>
+
+</div></blockquote>
+<p>For example, we could add a description parameter that will have it&#8217;s words
+captialized, and forced to be at most 500 characters:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">default_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">&quot;description&quot;</span><span class="p">:</span> <span class="s">&quot;A short description of the project.&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">alter_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="n">capwords</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">capwords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">])</span>
+
+<span class="k">def</span> <span class="nf">validate_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;description&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s">&#39;Description must be no longer than 500 characters.&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="specifying-dependencies">
+<h3>Specifying Dependencies<a class="headerlink" href="#specifying-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>To specify dependencies on vendor or pip packages, or a particular python
+version, implement one or more of the following methods in the template class:</p>
+<blockquote>
+<div><dl class="staticmethod">
+<dt id="basil.v0.base_template.BaseTemplate.get_prereq_packages">
+<em class="property">static </em><tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_prereq_packages</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_prereq_packages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_prereq_packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return a list of system packages to be installed before
+creating the project.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="basil.v0.base_template.BaseTemplate.get_prereq_pip_packages">
+<em class="property">static </em><tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_prereq_pip_packages</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_prereq_pip_packages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_prereq_pip_packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return either a string path to a requirements file, or a list
+of pip packages to be installed before creating the project.
+Each package should either be:</p>
+<blockquote>
+<div><ul class="simple">
+<li>A string representing the package (with optional version).</li>
+<li>A os_api.PipPackage object.</li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="basil.v0.base_template.BaseTemplate.get_python_version">
+<em class="property">static </em><tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_python_version</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_python_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_python_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return the python version for the virtual environment.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="additional-project-actions">
+<h3>Additional Project Actions<a class="headerlink" href="#additional-project-actions" title="Permalink to this headline">¶</a></h3>
+<p>Actions can be added to your basil template by implementing <tt class="docutils literal"><span class="pre">add_actions</span></tt>:</p>
+<blockquote>
+<div><dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.add_actions">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">add_actions</tt><big>(</big><em>actions</em><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.add_actions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.add_actions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should add actions to an actions.ActionCollectionConfig.
+The actions will be callable from a project directory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">my_action</span> <span class="o">=</span> <span class="n">actions</span><span class="o">.</span><span class="n">add_action</span><span class="p">(</span><span class="s">&#39;my_action&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">my_action</span><span class="p">)</span>
+<span class="n">my_action</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;positional_arg&#39;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s">&#39;A positional argument.&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s">&#39;test&#39;</span><span class="p">)</span>
+<span class="n">my_action</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">&#39;-f&#39;</span><span class="p">,</span> <span class="s">&#39;--foo&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&#39;store_true&#39;</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s">&#39;Foo&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">&#39;An optional flag.&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See: basil&#8217;s &#8216;actions&#8217; module.</p>
+</dd></dl>
+
+</div></blockquote>
+<p>Actions can be run from an existing project&#8217;s directory with:
+<tt class="docutils literal"><span class="pre">basil</span> <span class="pre">action_name</span></tt></p>
+</div>
+<div class="section" id="database-configuration">
+<h3>Database Configuration<a class="headerlink" href="#database-configuration" title="Permalink to this headline">¶</a></h3>
+<p>You can add database configuration to your template by implementing
+<tt class="docutils literal"><span class="pre">get_db_manager_config</span></tt>:</p>
+<blockquote>
+<div><dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.get_db_manager_config">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_db_manager_config</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_db_manager_config"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_db_manager_config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return a base_db_manager.DbManagerConfig if the template
+requires a database to be configured, or None if it doesn&#8217;t.</p>
+</dd></dl>
+
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>When using a database manager, ensure <tt class="docutils literal"><span class="pre">install_requires</span></tt> in <tt class="docutils literal"><span class="pre">setup.py</span></tt>
+lists the package containing the db_manager. For example:</p>
+<div class="last highlight-python"><div class="highlight"><pre><span class="n">install_requires</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;basil&#39;</span><span class="p">,</span> <span class="s">&#39;basil_postgres&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="additional-template-configuration">
+<h3>Additional Template Configuration<a class="headerlink" href="#additional-template-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Additional methods that can be implemented in the template class to add
+functionality are:</p>
+<blockquote>
+<div><dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.destroy">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">destroy</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.destroy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.destroy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called when a project is destroyed. Should cleanup anything done in
+final_setup().</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.final_setup">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">final_setup</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.final_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.final_setup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Will be called after all other project configuration is complete.
+Current directory will be the project&#8217;s root directory.
+Exceptions raised in here will stop the project creation process, and
+have their messages displayed to the user.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.get_env_variables">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_env_variables</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_env_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_env_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return a dictionary of environment variables and values to
+be set inside the virtualenv.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.get_instructions">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_instructions</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_instructions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_instructions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return basic instructions on what the user should do after
+the project is set up correctly.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="basil.v0.base_template.BaseTemplate.get_virtualenvironment_pip_packages">
+<tt class="descclassname">BaseTemplate.</tt><tt class="descname">get_virtualenvironment_pip_packages</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/basil/v0/base_template.html#BaseTemplate.get_virtualenvironment_pip_packages"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#basil.v0.base_template.BaseTemplate.get_virtualenvironment_pip_packages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Should return a list of system packages to be installed in the
+project&#8217;s virtualenvironment.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="installing-your-template">
+<h3>Installing your template<a class="headerlink" href="#installing-your-template" title="Permalink to this headline">¶</a></h3>
+<p>Run the following terminal commands from <tt class="docutils literal"><span class="pre">basil_parrot</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">sdist</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">dist</span><span class="o">/</span><span class="n">basil_parrot</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<p>To uninstall:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">uninstall</span> <span class="n">basil_parrot</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="subclassing-templates">
+<h2>Subclassing Templates<a class="headerlink" href="#subclassing-templates" title="Permalink to this headline">¶</a></h2>
+<p>Subclassing a template is a useful way to create a custom version of an
+existing template.</p>
+<p>To subclass a template instead of creating a new one, make the following
+alterations to your template (We will assume the &#8220;parent template&#8221; is called
+<tt class="docutils literal"><span class="pre">bird</span></tt>):</p>
+<ol class="arabic">
+<li><p class="first">In setup.py, ensure <tt class="docutils literal"><span class="pre">install_requires</span></tt> lists the package containing the
+<tt class="docutils literal"><span class="pre">bird</span></tt> template. For example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">install_requires</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;basil&#39;</span><span class="p">,</span> <span class="s">&#39;basil_bird&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">In your template file, instead of importing <tt class="docutils literal"><span class="pre">BaseTemplate</span></tt> from
+<tt class="docutils literal"><span class="pre">...base_template</span></tt>, import the <tt class="docutils literal"><span class="pre">BirdTemplate</span></tt> from <tt class="docutils literal"><span class="pre">..bird.v1</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">..bird.v1</span> <span class="kn">import</span> <span class="n">BirdTemplate</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal"><span class="pre">v1</span></tt> may vary depending on which major version of the parent template
+you wish to subclass. For more information, see: <a class="reference internal" href="versioning.html"><em>Versioning</em></a></p>
+</div>
+</li>
+<li><p class="first">Ensure your template class now inherits from <tt class="docutils literal"><span class="pre">BirdTemplate</span></tt> instead of
+<tt class="docutils literal"><span class="pre">BaseTemplate</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre>class ParrotTemplate(BirdTemplate):
+</pre></div>
+</div>
+</li>
+<li><p class="first">Override methods as usual in your template, bearing in mind you may need to
+use <a class="reference external" href="http://docs.python.org/library/functions.html#super" title="(in Python v2.7)"><tt class="xref py py-func docutils literal"><span class="pre">super()</span></tt></a> to ensure that functionality in <tt class="docutils literal"><span class="pre">BirdTemplate</span></tt> is
+still executed.</p>
+</li>
+</ol>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Templates</a><ul>
+<li><a class="reference internal" href="#creating-a-new-template">Creating a new template</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#basic-structure">Basic Structure</a></li>
+<li><a class="reference internal" href="#the-template-class">The Template Class</a></li>
+<li><a class="reference internal" href="#project-settings">Project Settings</a></li>
+<li><a class="reference internal" href="#specifying-dependencies">Specifying Dependencies</a></li>
+<li><a class="reference internal" href="#additional-project-actions">Additional Project Actions</a></li>
+<li><a class="reference internal" href="#database-configuration">Database Configuration</a></li>
+<li><a class="reference internal" href="#additional-template-configuration">Additional Template Configuration</a></li>
+<li><a class="reference internal" href="#installing-your-template">Installing your template</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#subclassing-templates">Subclassing Templates</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="previous chapter">Basil Installation and Usage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="db_managers.html"
+                        title="next chapter">Database Managers</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/templates.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="db_managers.html" title="Database Managers"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Basil Installation and Usage"
+             >previous</a> |</li>
+        <li><a href="index.html">Basil 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Catalyst IT Ltd.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,302 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>basil.v0.base_template &mdash; Basil 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Basil 0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+    <!--
+    Basil: Build A System Instant-Like
+    Copyright (C) 2014 Catalyst IT Ltd
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    -->
+     
+
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../../index.html">Basil 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for basil.v0.base_template</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">isclass</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">BasilVersionException</span><span class="p">,</span> <span class="n">get_module</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">prompt_settings</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">modules</span>
+
+<span class="c"># Settings that apply to all templates.</span>
+<span class="n">base_settings</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&#39;project_name&#39;</span><span class="p">:</span> <span class="s">&#39;project_name&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
+<div class="viewcode-block" id="BaseTemplate"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate">[docs]</a><span class="k">class</span> <span class="nc">BaseTemplate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base basil project template.</span>
+<span class="sd">    All prerequisites defined in static methods will be installed before</span>
+<span class="sd">    any object&#39;s are created.</span>
+
+<span class="sd">    A template&#39;s docstring will be displayed at the beginning of the project</span>
+<span class="sd">    creation process, and when &#39;basil doc&#39; is run for this template.</span>
+
+<span class="sd">    Each template&#39;s docstring should contain a description of:</span>
+
+<span class="sd">        * What the template is intended for</span>
+<span class="sd">        * What the template will do when creating a project.&quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_version</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the version number of the module this template class is</span>
+<span class="sd">        defined in.</span>
+
+<span class="sd">        The version number should be specified in the module&#39;s __version__</span>
+<span class="sd">        The first digit should be the major version of Basil the template is</span>
+<span class="sd">        designed for;</span>
+<span class="sd">        The second digit should be the major version of the template for</span>
+<span class="sd">        that version of Basil.</span>
+
+<span class="sd">        E.g. 1.2.3 would be the 3rd minor version of the 2nd major version of</span>
+<span class="sd">        the template for basil 1.x.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">modules</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__module__</span><span class="p">]</span><span class="o">.</span><span class="n">__version__</span>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="BaseTemplate.get_python_version"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_python_version">[docs]</a>    <span class="k">def</span> <span class="nf">get_python_version</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Should return the python version for the virtual environment.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;python&#39;</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="BaseTemplate.get_prereq_packages"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_prereq_packages">[docs]</a>    <span class="k">def</span> <span class="nf">get_prereq_packages</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Should return a list of system packages to be installed before</span>
+<span class="sd">        creating the project.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="BaseTemplate.get_prereq_pip_packages"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_prereq_pip_packages">[docs]</a>    <span class="k">def</span> <span class="nf">get_prereq_pip_packages</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Should return either a string path to a requirements file, or a list</span>
+<span class="sd">        of pip packages to be installed before creating the project.</span>
+<span class="sd">        Each package should either be:</span>
+
+<span class="sd">            * A string representing the package (with optional version).</span>
+<span class="sd">            * A os_api.PipPackage object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+</div>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">existing_project</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Accepts a settings dictionary to rebuild a project&#39;s object.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">existing_project</span> <span class="o">=</span> <span class="n">existing_project</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">settings</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">settings</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">default_settings</span> <span class="o">=</span> <span class="n">base_settings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">default_settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_settings</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="n">prompt_settings</span><span class="p">(</span><span class="n">default_settings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alter_settings</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate_settings</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BaseTemplate.default_settings"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.default_settings">[docs]</a>    <span class="k">def</span> <span class="nf">default_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return a dictionary of settings with default values that will</span>
+<span class="sd">        be used to prompt the user for input.</span>
+
+<span class="sd">        Note, even if not specified here, the following settings will be</span>
+<span class="sd">        prompted for:</span>
+
+<span class="sd">        &quot;&quot;&quot;</span> <span class="o">+</span> <span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">return</span> <span class="p">{}</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.alter_settings"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.alter_settings">[docs]</a>    <span class="k">def</span> <span class="nf">alter_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should make pre-validation alterations to the self.settings</span>
+<span class="sd">        dictionary. Called after settings have been entered by the user, but</span>
+<span class="sd">        before they have been validated. &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.validate_settings"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.validate_settings">[docs]</a>    <span class="k">def</span> <span class="nf">validate_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should check values in the self.settings dictionary, and raise</span>
+<span class="sd">        exceptions if anything is invalid.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.get_virtualenvironment_pip_packages"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_virtualenvironment_pip_packages">[docs]</a>    <span class="k">def</span> <span class="nf">get_virtualenvironment_pip_packages</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return a list of system packages to be installed in the</span>
+<span class="sd">        project&#39;s virtualenvironment.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[]</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.get_readme_file_path"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_readme_file_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_readme_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return the path to the readme file relative to the project&#39;s</span>
+<span class="sd">        root directory.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;get_readme_file_path() should return the path to the &quot;</span>
+                <span class="s">&quot;readme file relative to the project&#39;s root directory.&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.get_env_variables"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_env_variables">[docs]</a>    <span class="k">def</span> <span class="nf">get_env_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return a dictionary of environment variables and values to</span>
+<span class="sd">        be set inside the virtualenv.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{}</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the name of the project&#39;s root folder. This will also</span>
+<span class="sd">        be the name of the virtualenv.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s">&#39;project_name&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="BaseTemplate.get_db_manager_config"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_db_manager_config">[docs]</a>    <span class="k">def</span> <span class="nf">get_db_manager_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return a base_db_manager.DbManagerConfig if the template</span>
+<span class="sd">        requires a database to be configured, or None if it doesn&#39;t.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        from basil.v0.base_db_manager import DbManagerConfig</span>
+<span class="sd">        db_manager_config = DbManagerConfig(&#39;postgres&#39;, 0)</span>
+<span class="sd">        db_manager_config.add_db(name=&#39;test&#39;)</span>
+<span class="sd">        db_manager_config.add_user(name=&#39;tester&#39;, password=&#39;123456&#39;,</span>
+<span class="sd">                granted_dbs=[&#39;test&#39;, ])</span>
+<span class="sd">        return db_manager_config</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.get_instructions"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.get_instructions">[docs]</a>    <span class="k">def</span> <span class="nf">get_instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return basic instructions on what the user should do after</span>
+<span class="sd">        the project is set up correctly.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&#39;&#39;</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.create_project_dir"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.create_project_dir">[docs]</a>    <span class="k">def</span> <span class="nf">create_project_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should create the project&#39;s directory inside the current directory,</span>
+<span class="sd">        and fill it with all necessary files. Exceptions raised in here will</span>
+<span class="sd">        stop the project creation process, and have their messages displayed to</span>
+<span class="sd">        the user.</span>
+<span class="sd">        The project&#39;s directory should be the value of self.get_name().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s">&quot;create_project_dir() should create the project&#39;s &quot;</span>
+                <span class="s">&quot;directory inside the current directory, and fill it with all &quot;</span>
+                <span class="s">&quot;necessary files.&quot;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.final_setup"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.final_setup">[docs]</a>    <span class="k">def</span> <span class="nf">final_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Will be called after all other project configuration is complete.</span>
+<span class="sd">        Current directory will be the project&#39;s root directory.</span>
+<span class="sd">        Exceptions raised in here will stop the project creation process, and</span>
+<span class="sd">        have their messages displayed to the user.&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+    <span class="k">def</span> <span class="nf">get_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should return a dictionary of settings to be saved, which will be</span>
+<span class="sd">        used to create the object when running destroy.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span>
+
+<div class="viewcode-block" id="BaseTemplate.destroy"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.destroy">[docs]</a>    <span class="k">def</span> <span class="nf">destroy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Called when a project is destroyed. Should cleanup anything done in</span>
+<span class="sd">        final_setup().&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="BaseTemplate.add_actions"><a class="viewcode-back" href="../../../templates.html#basil.v0.base_template.BaseTemplate.add_actions">[docs]</a>    <span class="k">def</span> <span class="nf">add_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">actions</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Should add actions to an actions.ActionCollectionConfig.</span>
+<span class="sd">        The actions will be callable from a project directory::</span>
+
+<span class="sd">            my_action = actions.add_action(&#39;my_action&#39;, self.my_action)</span>
+<span class="sd">            my_action.add_argument(&#39;positional_arg&#39;,</span>
+<span class="sd">                    help=&#39;A positional argument.&#39;, default=&#39;test&#39;)</span>
+<span class="sd">            my_action.add_argument(&#39;-f&#39;, &#39;--foo&#39;, action=&#39;store_true&#39;,</span>
+<span class="sd">                    metavar=&#39;Foo&#39;, help=&#39;An optional flag.&#39;)</span>
+
+<span class="sd">        See: basil&#39;s &#39;actions&#39; module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+</div></div>
+<span class="k">def</span> <span class="nf">get_template_class</span><span class="p">(</span><span class="n">template_name</span><span class="p">,</span> <span class="n">major_version_number</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Factory to retrieve a template class for a certain version of basil.&quot;&quot;&quot;</span>
+
+    <span class="c"># Get the appropriate template module.</span>
+    <span class="n">template_module</span> <span class="o">=</span> <span class="n">get_module</span><span class="p">(</span><span class="s">&#39;templates.&#39;</span> <span class="o">+</span> <span class="n">template_name</span><span class="p">,</span>
+            <span class="n">major_version_number</span><span class="p">)</span>
+
+    <span class="n">template</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">template_module</span><span class="o">.</span><span class="n">__dict__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="c"># Find the class that inherits from BaseTemplate.</span>
+        <span class="k">if</span> <span class="n">isclass</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">BaseTemplate</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">!=</span> <span class="n">BaseTemplate</span><span class="p">:</span>
+            <span class="n">template</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">template</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">template</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BasilVersionException</span><span class="p">(</span><span class="s">&quot;{} template class could not be found.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">template_name</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../../index.html">Basil 0.1 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Catalyst IT Ltd.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.1.
+    </div>
+  </body>
+</html>
