@@ -22,5 +22,5 @@ https://pypi.python.org/pypi/basil_django/0.1
 Authors
 -------
 
-@ben-denham
-@grantps
+* @ben-denham
+* @grantps
