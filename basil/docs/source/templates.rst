@@ -209,7 +209,8 @@ functionality are:
     .. automethod:: BaseTemplate.destroy
     .. automethod:: BaseTemplate.final_setup
     .. automethod:: BaseTemplate.get_env_variables
-    .. automethod:: BaseTemplate.get_instructions
+    .. automethod:: BaseTemplate.get_next_step_instructions
+    .. automethod:: BaseTemplate.get_further_config_instructions
     .. automethod:: BaseTemplate.get_virtualenvironment_pip_packages
 
 Installing your template

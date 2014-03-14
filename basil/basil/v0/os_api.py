@@ -369,9 +369,32 @@ def add_virtualenvironment_environment_variables(virtualenv_name, variables):
 
 
 def validate_project_does_not_exists(project_name):
+    """Ensures that a given project name does not already exist as a directory
+    or as a virtualenvironment."""
     if isdir(project_name):
         raise Exception("'{}' already exists in current directory.".format(
                 project_name))
     if isdir(join(getenv('HOME'), '.virtualenvs', project_name,)):
         raise Exception("'{}' virtualenv already exists.".format(
                 project_name))
+
+def get_next_step_instructions(project_name):
+    """Gets the 'Next step' instructions that apply to all types of project.
+    These will be displayed before project-specific other next step
+    instructions."""
+    
+    return [
+            "Run 'source {shell_config}'".format(shell_config=shell_conf_path)
+            ]
+
+def get_further_config_instructions(project_name):
+    """Gets the 'Further configuration' instructions that apply to all types of
+    project. These will be displayed before project-specific other further
+    configuration instructions."""
+    
+    return [
+            ("Add configuration settings outside of version control in "
+            "~/.virtualenvs/{site}/postactivate").format(site=project_name),
+            ("Run 'workon {site}' each time you edit "
+            "~/.virtualenvs/{site}/postactivate").format(site=project_name)
+            ]

@@ -26,7 +26,7 @@ from base_template import get_template_class
 from base_db_manager import get_db_manager_class
 from utils import (BasilVersionException, get_basil_major_version,
         get_module_major_version, iteritems, load_module_from_file,
-        DebugException)
+        DebugException, format_instructions)
 from io import to_unicode, from_unicode, EncodedFile
 import json
 from actions import ActionCollectionConfig
@@ -35,6 +35,7 @@ from settings import (set_basil_setting, unset_basil_setting,
 from hooks import run_hook
 from inspect import getdoc
 from types import ModuleType
+from textwrap import wrap
 
 __version__ = u'0.1'
 settings_file_name = u'.basil'
@@ -150,28 +151,27 @@ def create(args):
         run_hook(hook_module, 'pre', project_settings)
 
     db_manager_config = project.get_db_manager_config()
-    instructions = """
----------------------------------------------------------------------
-  {site} project successfully set up!
----------------------------------------------------------------------
-- Installed required system packages and pip packages.""".format(
-        site=project_name)
-
+    
+    completed_steps = [
+            'Installed required system packages and pip packages.',
+            ("New '{site}' virtualenv created with required pip "
+            "packages.").format(site=project_name),
+            "Set up '{site}' project directory.".format(site=project_name),
+            "Git repository initialized."
+            ]
     if db_manager_config != None:
-        instructions += '- Configured required project database(s) and '
-        'user(s).'
+        completed_steps.append('Configured required project database(s) and '
+        'user(s).')
+    instructions_dict = {
+            '{site} project created successfully!'.format(site=project_name): completed_steps,
+            'Next steps:': os_api.get_next_step_instructions(project_name)
+                    + project.get_next_step_instructions(),
+            'Further configuration: ': os_api.get_further_config_instructions(
+                    project_name)
+                    + project.get_further_config_instructions()
+            }
+    instructions = format_instructions(instructions_dict)
 
-    instructions += """
-- New '{site}' virtualenv created with required pip packages.
-- Set up '{site}' project directory.
-- Git repository initialized.
----------------------------------------------------------------------
- Next steps:
----------------------------------------------------------------------""".format(
-        site=project_name) + to_unicode(project.get_instructions()) + (
-"""- Add configuration settings outside of version control in ~/.virtualenvs/{site}/postactivate
-- (Re-run 'workon {site}' each time you edit ~/.virtualenvs/{site}/postactivate)
-""").format(site=project_name)
     readme_path = to_unicode(project.get_readme_file_path())
 
     print('-- Setting up virtualenvironment')
@@ -281,6 +281,7 @@ def create(args):
 
     # Display instructions in the case of a successful project initialization.
     print(instructions)
+    print("Instructions saved in: {readme}".format(readme=readme_path))
 
 
 def destroy(args):
@@ -371,28 +372,35 @@ def destroy(args):
                     "continuing anyway".format(project_name), e)
             print(de)
 
-        print(('''
----------------------------------------------------------------------
- {project_name} successfully destroyed
----------------------------------------------------------------------
-You may wish to remove the following system packages that this project depended on:
+        instructions_dict = {
+                '{site} successfully destroyed'.format(site=project_name): [
+                        ('You may wish to remove the following system packages '
+                        'that this project depended on:\n\n'
+                        '{dependent_packages}').format(
+                                dependent_packages='\n'.join(
+                                        dependent_packages)),
+                        ('You may wish to remove the following pip packages '
+                        'that this project depended on:\n\n'
+                        '{dependent_pip_packages}').format(
+                                dependent_pip_packages=to_unicode('\n'.join(
+                                        dependent_pip_packages))),
+                        ('You may wish to remove the '
+                        '"basil-virtualenvwrapper-config" block from '
+                        '{shell_config}.').format(shell_config=to_unicode(
+                                os_api.shell_conf_path))
+                        ],
+                '*** IMPORTANT WARNING ***': [
+                        'You should only remove packages that are not '
+                        'depended on by other packages or projects.',
+                        'Removing packages may result in data loss (e.g. '
+                        'databases).',
+                        'Only remove the "basil-virtualenvwrapper-config" '
+                        'block if this is your only project and you no longer '
+                        'wish to use virtualenvwrapper.'
+                        ]
+                }
 
-{dependent_packages}
-
-You may wish to remove the following pip packages that this project depended on:
-
-{dependent_pip_packages}
-
-You may wish to remove the "basil-virtualenvwrapper-config" block from {shell_config}.
-
-*** IMPORTANT WARNING ***
-* You should only remove packages that are not depended on by other packages or projects.
-* Removing packages may result in data loss (e.g. databases).
-* Only remove the "basil-virtualenvwrapper-config" block if this is your last project and you no longer wish to use virtualenvwrapper.
-''').format(project_name=project_name,
-        dependent_packages=to_unicode('\n'.join(dependent_packages)),
-        dependent_pip_packages=to_unicode('\n'.join(dependent_pip_packages)),
-        shell_config=to_unicode(os_api.shell_conf_path)))
+        print(format_instructions(instructions_dict))
     else:
         print('Aborting')
 

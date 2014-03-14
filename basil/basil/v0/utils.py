@@ -20,12 +20,13 @@ from sys import version_info, exc_info
 from traceback import format_exception
 from io import to_unicode
 from os.path import abspath, basename, splitext
+from textwrap import wrap
 
 python3 = version_info.major >= 3
 if python3:
-    iteritems = lambda d: d.iteritems()
-else:
     iteritems = lambda d: iter(d.items())
+else:
+    iteritems = lambda d: d.iteritems()
 
 
 class BasilVersionException(Exception):
@@ -134,3 +135,31 @@ def load_module_from_file(module_path):
     else:
         from imp import load_source
         return load_source(module_name, module_path)
+
+def format_instructions(instructions_dict):
+    """Formats a given set of instructions for terminal display.
+    instructions should be a dictionary of lists of instructions keyed by
+    section titles."""
+    
+    output = ''
+    
+    for title, instructions in iteritems(instructions_dict):
+        if not instructions:
+            continue
+        
+        instruction_lines = ['']
+        for instruction in instructions:
+            instruction_lines += wrap(u'- ' + to_unicode(instruction),
+                    replace_whitespace=False)
+            # Add blank line between insructions.
+            instruction_lines.append('')
+        
+        output += """
+---------------------------------------------------------------------
+ {title}
+---------------------------------------------------------------------
+{instructions}""".format(
+        title=to_unicode(title),
+        instructions = '\n'.join(instruction_lines))
+
+    return output

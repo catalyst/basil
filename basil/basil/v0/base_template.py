@@ -145,10 +145,15 @@ class BaseTemplate(object):
         """
         return None
 
-    def get_instructions(self):
+    def get_next_step_instructions(self):
         """Should return basic instructions on what the user should do after
         the project is set up correctly."""
-        return ''
+        return []
+
+    def get_further_config_instructions(self):
+        """Should return advanced configuration instructions for the project.
+        """
+        return []
 
     def create_project_dir(self):
         """Should create the project's directory inside the current directory,

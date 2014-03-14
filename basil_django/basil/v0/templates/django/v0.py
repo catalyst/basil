@@ -26,7 +26,7 @@ import stat as stat_consts
 import re
 from datetime import date
 from ...io import EncodedFile
-from ...utils import DebugException
+from ...utils import DebugException, format_instructions
 
 __version__ = '0.0.1'
 
@@ -88,16 +88,26 @@ class DjangoTemplate(BaseTemplate):
             'DJANGO_SETTINGS_MODULE': 'config.settings'
             }
 
-    def get_instructions(self):
-        return ("""
-- Change DJANGO_SECRET_KEY in ~/.virtualenvs/{site}/bin/postactivate
-- Run 'workon {site}' to activate your new virtual environment (then 'deactivate' to exit).
-- Move into the {site} directory and run 'basil new_app my_app_name' to create a new django app.
-- Optionally, activate a different settings class (e.g. 'Local', 'Production', or another settings class defined in {site}/config/settings.py) by altering DJANGO_CONFIGURATION in ~/.virtualenvs/{site}/bin/postactivate
-- Start the server by running './{site}/manage.py runserver 0.0.0.0:8080'
-- Administer your new site in your browser at: http://localhost:8080/admin
-- For more information on using django, see: https://docs.djangoproject.com/en/1.6/intro/tutorial01/
-""").format(site=self.settings['project_name'])
+    def get_next_step_instructions(self):
+        site = self.settings['project_name']
+        return [
+                ('Change DJANGO_SECRET_KEY in ~/.virtualenvs/{site}/bin/'
+                'postactivate.').format(site=site),
+                ("Run 'workon {site}' to activate your new virtual "
+                "environment (then 'deactivate' to exit).").format(site=site),
+                ("Move into the {site} directory and run 'basil new_app "
+                "my_app_name' to create a new django app.").format(site=site),
+                ("Optionally, activate a different settings class (e.g. "
+                "'Local', 'Production', or another settings class defined in "
+                "{site}/config/settings.py) by altering DJANGO_CONFIGURATION "
+                "in ~/.virtualenvs/{site}/bin/postactivate").format(site=site),
+                ("Start the server by running './{site}/manage.py runserver "
+                "0.0.0.0:8080'").format(site=site),
+                ("Administer your new site in your browser at: "
+                "http://localhost:8080/admin").format(site=site),
+                ("For more information on using django, see: "
+                "https://docs.djangoproject.com/en/1.6/intro/tutorial01/")
+                ]
 
     def create_project_dir(self):
         import cookiecutter.config
@@ -215,10 +225,15 @@ class DjangoTemplate(BaseTemplate):
             virtualenvwrapper_call(apply_migration_args,
                     virtualenv_name=self.get_name())
 
-        print('''
----------------------------------------------------------------------
-  {app_name} successfully added to {project_name}
----------------------------------------------------------------------
-- To create a new migration: ./manage.py schemamigration {app_name} --auto
-- To execute a migration: ./manage.py migrate {app_name}
-'''.format(app_name=app_name, project_name=self.get_name()))
+        instructions = format_instructions({
+                '{app_name} successfully added to {project_name}'.format(
+                        app_name=app_name, project_name=self.get_name()): [
+                                ("To create a new migration: './manage.py "
+                                "schemamigration {app_name} --auto'").format(
+                                        app_name=app_name),
+                                ("To execute a migration: ./manage.py migrate "
+                                "{app_name}").format(app_name=app_name)
+                                ]
+                })
+
+        print(instructions)
