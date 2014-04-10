@@ -126,6 +126,9 @@ def create(args):
     print('-- Installing pre-requisite pip-packages (This may take a while)')
     for pip_package in prereq_pip_packages:
         os_api.install_pip_package(to_unicode(pip_package))
+        
+    # Ensure that git has the required config settings.
+    os_api.require_git_config()
 
     # Handle project settings provided in a JSON file.
     input_settings = None

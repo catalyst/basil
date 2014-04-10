@@ -22,7 +22,7 @@ from os import getenv, devnull, walk
 from os.path import join, isdir, isfile
 from mmap import mmap, ACCESS_READ
 from utils import iteritems, DebugException
-from io import to_unicode, from_unicode, EncodedFile
+from io import to_unicode, from_unicode, EncodedFile, get_input
 from settings import get_basil_setting
 
 # Look into using http://amoffat.github.io/sh/ if it get Windows support.
@@ -398,3 +398,17 @@ def get_further_config_instructions(project_name):
             ("Run 'workon {site}' each time you edit "
             "~/.virtualenvs/{site}/postactivate").format(site=project_name)
             ]
+
+def require_git_config():
+    require_git_setting('user.name')
+    require_git_setting('user.email')
+
+def require_git_setting(setting_name):
+    try:
+        quiet_call(['git', 'config', '--get', setting_name])
+    except:
+        value = get_input('Please enter a value for the global git "{}" '
+                'setting: '.format(setting_name))
+        quiet_call(['git', 'config', '--global', setting_name, value])
+        # Call this function again, so that we are sure there is a valid value.
+        require_git_setting(setting_name)

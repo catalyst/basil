@@ -80,6 +80,21 @@ def from_unicode(obj, encoding=default_encoding, errors='strict'):
     return obj
 
 
+def get_input(prompt):
+    prompt = to_unicode(prompt)
+
+    try:
+            input_value = input(prompt)
+    except:
+        raise EncodingException('input value for {}'.format(prompt),
+                getdefaultencoding())
+
+    if not python3:
+        input_value = to_unicode(input_value)
+        
+    return input_value.strip()
+
+
 def prompt_settings(default_settings={}):
     """Prompt a user for settings values, based on a dictionary of default
     settings values."""
@@ -93,17 +108,7 @@ def prompt_settings(default_settings={}):
         value = to_unicode(value)
         prompt = from_unicode('- {} (default is "{}"): '.format(key, value))
 
-        try:
-            input_value = input(prompt)
-        except:
-            raise EncodingException('value for {}'.format(key),
-                    getdefaultencoding())
-
-        if not python3:
-            input_value = to_unicode(input_value)
-
-        input_value = input_value.strip()
-
+        input_value = get_input(prompt)
         if input_value == '':
             input_value = value
 
