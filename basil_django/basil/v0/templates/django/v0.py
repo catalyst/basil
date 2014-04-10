@@ -170,11 +170,11 @@ class DjangoTemplate(BaseTemplate):
                     'directory.'.format(app_name))
 
         # Get a string of installed apps.
-        in_virtualenvironment = in_virtualenvironment(self.get_name())
+        is_in_virtualenvironment = in_virtualenvironment(self.get_name())
         installed_apps_args = ['python', '-c',
                 'from configurations import importer; importer.install(); '
                 'import config.settings; print config.settings.INSTALLED_APPS']
-        if not in_virtualenvironment:
+        if not is_in_virtualenvironment:
             installed_apps = get_virtualenvwrapper_output(
                     installed_apps_args, virtualenv_name=self.get_name())
         else:
@@ -185,7 +185,7 @@ class DjangoTemplate(BaseTemplate):
 
         print('-- Creating app')
         create_app_args = ['./manage.py', 'startapp', app_name]
-        if in_virtualenvironment:
+        if is_in_virtualenvironment:
             quiet_call(create_app_args)
         else:
             virtualenvwrapper_call(create_app_args,
@@ -211,7 +211,7 @@ class DjangoTemplate(BaseTemplate):
         print('-- Creating initial database migration')
         create_initial_migration_args = ['./manage.py', 'schemamigration',
                 app_name, '--initial']
-        if in_virtualenvironment:
+        if is_in_virtualenvironment:
             quiet_call(create_initial_migration_args)
         else:
             virtualenvwrapper_call(create_initial_migration_args,
@@ -219,7 +219,7 @@ class DjangoTemplate(BaseTemplate):
 
         print('-- Applying initial database migration')
         apply_migration_args = ['./manage.py', 'migrate', app_name]
-        if in_virtualenvironment:
+        if is_in_virtualenvironment:
             quiet_call(apply_migration_args)
         else:
             virtualenvwrapper_call(apply_migration_args,
