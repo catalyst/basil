@@ -20,8 +20,9 @@ from __future__ import print_function
 from ...os_api import (virtualenvwrapper_call, in_virtualenvironment,
         get_virtualenvwrapper_output, get_output, quiet_call, )
 from ...base_template import BaseTemplate
+from shutil import move
 from os.path import isdir, isfile, join
-from os import stat, chmod, chdir
+from os import stat, chmod, chdir, mkdir
 import stat as stat_consts
 import re
 from datetime import date
@@ -46,9 +47,7 @@ class DjangoTemplate(BaseTemplate):
         return {
                 "author_name": "Your Name",
                 "email": "Your email",
-                "description": "A short description of the project.",
-                "domain_name": "example.com",
-                "version": "0.1.0"
+                "domain_name": "example.com"
         }
 
     def alter_settings(self):
@@ -70,38 +69,26 @@ class DjangoTemplate(BaseTemplate):
             raise Exception('Domain name must only contain A-z characters, '
                     'digits, and dashes separated by periods.')
 
-        # Version.
-        if not version.match(self.settings['version']):
-            raise Exception('Version number must only contain digits '
-                    'separated by periods.')
-
     def get_virtualenvironment_pip_packages(self):
         return join('requirements', 'local.txt')
 
     def get_readme_file_path(self):
         return 'README.rst'
 
-    def get_env_variables(self):
-        return {
-            'DJANGO_CONFIGURATION': 'Local',
-            'DJANGO_SECRET_KEY': 'CHANGEME!!!',
-            'DJANGO_SETTINGS_MODULE': 'config.settings'
-            }
-
     def get_next_step_instructions(self):
         site = self.settings['project_name']
         return [
-                ('Change DJANGO_SECRET_KEY in ~/.virtualenvs/{site}/bin/'
+                ('Change DJANGO_SECRET_KEY in {site}/{site}/unversioned.py'
                 'postactivate.').format(site=site),
                 ("Run 'workon {site}' to activate your new virtual "
                 "environment (then 'deactivate' to exit).").format(site=site),
                 ("Move into the {site} directory and run 'basil new_app "
                 "my_app_name' to create a new django app.").format(site=site),
-                ("Optionally, activate a different settings class (e.g. "
-                "'Local', 'Production', or another settings class defined in "
-                "{site}/config/settings.py) by altering DJANGO_CONFIGURATION "
-                "in ~/.virtualenvs/{site}/bin/postactivate").format(site=site),
-                ("Start the server by running './{site}/manage.py runserver "
+                ("Optionally, activate a different settings module (e.g. "
+                "'development', 'production', or another settings class "
+                "defined in {site}/config/) by altering config_module "
+                "in {site}/config/unversioned.py").format(site=site),
+                ("Start the server by running './manage.py runserver "
                 "0.0.0.0:8080'").format(site=site),
                 ("Administer your new site in your browser at: "
                 "http://localhost:8080/admin").format(site=site),
@@ -110,22 +97,51 @@ class DjangoTemplate(BaseTemplate):
                 ]
 
     def create_project_dir(self):
-        import cookiecutter.config
-        from cookiecutter.main import cookiecutter as cookiecutter_make
+        quiet_call(['django-admin.py', 'startproject',
+                    self.settings['project_name']])
 
-        cookiecutter_settings = self.settings.copy()
-        # repo_name is used by this cookiecutter template to name the outer
-        # project directory.
-        cookiecutter_settings['repo_name'] = self.get_name()
+        chdir(self.settings['project_name'])
 
-        print('')
-        # Set the default cookiecutter config.
-        cookiecutter.config.DEFAULT_CONFIG['default_context'].update(
-                cookiecutter_settings)
-        # Run cookiecutter, forcing no-input so that the default is used.
-        cookiecutter_make("https://github.com/ben-denham/cookiecutter-django",
-                None, True)
-        print('')
+        with EncodedFile('.gitignore', 'a', errors='replace') as gitignore:
+            gitignore.write(
+                join(self.settings['project_name'], 'config', 'unversioned.py'))
+
+        chdir(self.settings['project_name'])
+
+        mkdir('config')
+
+        move('settings.py', join('config', 'base.py'))
+        with EncodedFile('settings.py', 'a', errors='replace') as settings:
+            settings.write('import sys\n')
+            settings.write('from importlib import import_module\n')
+            settings.write('from config.unversioned import config_profile\n')
+            settings.write("config_module = import_module('{}.config.' + config_profile)\n".format(self.settings['project_name']))
+            settings.write('current_module = sys.modules[__name__]\n')
+            settings.write('for attribute in dir(config_module):\n')
+            settings.write("    if not (attribute.startswith('__') and attribute.endswith('__')):\n")
+            settings.write('        setattr(current_module, attribute, getattr(config_module, attribute))\n')
+            settings.write('from config.unversioned import *\n')
+
+        chdir('config')
+
+        # Create empty files.
+        with EncodedFile('__init__.py', 'a', errors='replace') as init:
+            pass
+
+        with EncodedFile('unversioned.py', 'a', errors='replace') as unversioned:
+            unversioned.write("config_profile = 'development'\n")
+            pass
+
+        with EncodedFile('development.py', 'a', errors='replace') as dev:
+            dev.write('from base import *\n')
+            dev.write('DEBUG = True\n')
+            dev.write('TEMPLATE_DEBUG = DEBUG\n')
+
+        with EncodedFile('production.py', 'a', errors='replace') as prod:
+            prod.write('from base import *\n')
+            prod.write('DEBUG = False\n')
+            prod.write('TEMPLATE_DEBUG = DEBUG\n')
+
 
     def final_setup(self):
         manage_py_path = join(self.settings['project_name'], 'manage.py')

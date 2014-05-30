@@ -126,7 +126,7 @@ def create(args):
     print('-- Installing pre-requisite pip-packages (This may take a while)')
     for pip_package in prereq_pip_packages:
         os_api.install_pip_package(to_unicode(pip_package))
-        
+
     # Ensure that git has the required config settings.
     os_api.require_git_config()
 
@@ -154,7 +154,7 @@ def create(args):
         run_hook(hook_module, 'pre', project_settings)
 
     db_manager_config = project.get_db_manager_config()
-    
+
     completed_steps = [
             'Installed required system packages and pip packages.',
             ("New '{site}' virtualenv created with required pip "
