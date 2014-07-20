@@ -1,0 +1,103 @@
+body {
+  padding: 0;
+  margin: 0;
+  background-repeat: no-repeat;
+  background-position: center top;
+  margin-left: 25px;
+  margin-top: 11px;
+  font-size: 13px;
+  font-family: "Liberation Sans", "Lucida Grande", Arial, sans-serif;
+  padding-bottom:35px;
+}
+h1 {
+    float: left;
+    font-size: 25px;
+    padding-top: 20px;
+}
+h2 {
+    float: left;
+    clear: both;
+    color: #2e8539;
+    font-weight: bold;
+    font-size: 18px;
+}
+table {
+    float: left;
+    clear: both;
+}
+th {
+    text-align: left;
+    padding: 4px 8px 2px 12px;
+    background-color: #2e8539;
+    font-size: 13px;
+    color: white;
+    font-weight: bold;
+}
+td {
+    font-size: 13px;
+    vertical-align: top;
+    padding: 8px;
+}
+.project-cell {
+    font-style: italic;
+    font-size: 15px;
+    
+}
+#settings-form {
+    width: 400px;
+}
+.submit {
+    float: right;
+    clear: both;
+    margin-top: 10px;
+}
+#apply-template {
+    clear: none;
+}
+.fld-lbl {
+    float: left;
+    clear: both;
+    margin-right: 15px;    
+}
+.dropdown {
+    float: right;
+}
+.txt-input {
+    float: right;
+}
+.tpl-name {
+    font-style: italic;
+    font-weight: normal;
+}
+.instructions {
+    font-size: 15px;
+    clear: both;
+}
+#templates-form {
+    width: 400px;
+}
+#templates-dropdown {
+    float: left;
+    width: 150px;
+}
+#template-description {
+    width: 60%;
+    clear: both;
+    font-size: 13px;
+    padding-top: 20px;
+}
+#apply-button {
+    float: left;
+    margin-left: 15px;
+}
+#time-warning {
+    font-size: 11px;
+    padding-top: 10px;
+    width: 300px;
+    float: left;
+}
+#basil-logo {
+    float: left;
+    margin: 10px 30px 20px 0;
+}
+
