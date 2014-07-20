@@ -1,4 +1,0 @@
-basil
-basil.v0
-basil.v0.db_managers
-basil.v0.templates

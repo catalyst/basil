@@ -1,4 +1,0 @@
-[console_scripts]
-basil = basil.v0.main:main
-basil0 = basil.v0.main:main
-
