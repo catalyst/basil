@@ -40,6 +40,7 @@ import importlib
 import json
 import os
 from os.path import join
+import re
 import shutil
 import subprocess
 
@@ -347,17 +348,48 @@ def get_project_status(project_name, template_name, template_version):
     return project_status_func(project_name, project_directory,
         template_name, template_version)
 
+def get_port_forwarded_collision_msg(error):
+    forwarded_collision_result_pattern = (r"The forwarded port to (\d{4,5}) "
+        r"is already in use on the host machine")
+    port_forwarded_collision_result = re.search(
+        forwarded_collision_result_pattern, error)
+    try:
+        port_forwarded = port_forwarded_collision_result.group(1)
+    except Exception:
+        port_forwarded = False
+    if port_forwarded:
+        msg = ("Unable to start project because it wants to share content "
+        "with you over a port ({}) that is already in use - perhaps by "
+        "another project. Try stopping other projects first.".format(
+        port_forwarded))
+    else:
+        msg = None
+    return msg
+
 def run_vagrant_cmd(command_list, project_directory):
     """
     command_list -- must be a list ready for subprocess to use.
+
+    Don't include lines breaks in msg - only the first line is sent via the
+    header.
+
+    error_transforms -- functions taking error string as input and returning
+    msg - either string message or None.
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     unused, stderr = p.communicate()
     if stderr:
+        error = str(stderr, "utf-8").replace("\n", " ") # put on one line before searching
+        msg = error
+        error_transforms = [get_port_forwarded_collision_msg, ]
+        for error_transform in error_transforms:
+            trans_msg = error_transform(error)
+            if trans_msg:
+                msg = trans_msg
+                break
         raise Exception("Command \"{}\" failed. Reason: {}"
-            .format(" ".join(command_list), str(stderr, "utf-8")
-            .replace("\n", " ")))
+            .format(" ".join(command_list), msg.replace("\n", " ")))
     
 def start_project(project_directory):
     """
@@ -387,3 +419,5 @@ def destroy_project(project_directory):
     """
     run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
         project_directory=project_directory)
+    shutil.rmtree(project_directory)
+    
