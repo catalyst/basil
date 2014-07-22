@@ -128,3 +128,32 @@ th#actions-col {
 .float-right {
     float: right;
 }
+/* jQuery UI **************************************************************** */
+.no-close .ui-dialog-titlebar-close {
+    display: none;
+}
+.ui-widget-header, .ui-dialog-title {
+    background-color: #2e8539;
+    background-image: none;
+}
+.ui-widget-header {
+    border: 1px solid #28642f;
+}
+
+.ui-state-default.ui-button-text-only {
+    color: #28642f;
+}
+.ui-state-default.ui-state-focus {
+    background-color: #eaf4ec;
+    background-image: none;
+    border-color: #28642f;
+    border-width: 1px;
+    color: black;
+}
+.ui-state-default.ui-state-hover {
+    background-color: #eaf4ec;
+    background-image: none;
+    border-color: #ccc;
+    color: black;
+}
+

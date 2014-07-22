@@ -104,6 +104,10 @@ class Page(Request):
         return 'Basil'
 
     def head(self):
+        """
+        Add other css before main.css so main overrides others.
+        Add other js after jquery core so they can use it.
+        """
         return """
         <link rel="stylesheet" href="css/main.css">
         <script type="text/javascript" src="js/jquery.min.js"></script>
@@ -179,24 +183,35 @@ class Action(Request):
             raise Exception("Unable to carry out page action. "
                 "Original error: {}".format(e))
 
-
-class ProjectStart(Action):
-
-    def execute(self):
+    def execute(self, func, args):
         try:
-            core.start_project(self.project_directory)
+            func(*args)
         except Exception as e:
             self.response = 500
             self.response_msg = e
             print(e)
-        super(ProjectStart, self).execute()
+        super(Action, self).execute()
+
+
+class ProjectStart(Action):
+
+    def execute(self):
+        super(ProjectStart, self).execute(func=core.start_project,
+            args=[self.project_directory,])
 
 
 class ProjectStop(Action):
 
     def execute(self):
-        core.stop_project(self.project_directory)
-        super(ProjectStop, self).execute()
+        super(ProjectStop, self).execute(func=core.stop_project,
+            args=[self.project_directory,])
+
+
+class ProjectDestroy(Action):
+
+    def execute(self):
+        super(ProjectDestroy, self).execute(func=core.destroy_project,
+            args=[self.project_directory,])
 
 
 class HomePage(Page):
@@ -205,9 +220,9 @@ class HomePage(Page):
         return "Basil Project Manager"
     
     def head(self):
-        head = super(HomePage, self).head()
+        head = """<link rel="stylesheet" href="css/jquery-ui.min.css">"""
+        head += super(HomePage, self).head() # we want main.css to override other css
         head += """
-        <link rel="stylesheet" href="css/jquery-ui.min.css">
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/basil.js"></script>
         """
@@ -243,9 +258,9 @@ class HomePage(Page):
         <p id="loading-projects" class=\"instructions\">
         Loading projects status details ...</p>
         </div>
-        <div id="destroy-dialog" title="Basic dialog" style="display: none;">
-        <p>This is the default dialog which is useful for displaying information.
-        The dialog window can be moved, resized and closed with the 'x' icon.</p>
+        <div id="destroy-dialog" title="Destroy Project" style="display: none;">
+        <p>Destroying your project is irreversible. Do you really want to
+        destroy it?</p>
         </div>""".format(template_dropdown=keys.TEMPLATE, options=options_html)
         return html
 
@@ -385,6 +400,7 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
             (r'get-statuses', {'GET': GetStatuses,}),
             (r'project-start', {'POST': ProjectStart,}),
             (r'project-stop', {'POST': ProjectStop,}),
+            (r'project-destroy', {'POST': ProjectDestroy,}),
             (r'', {'GET': HomePage,}),
         ]
         super(BasilManagerHandler, self).__init__(

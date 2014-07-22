@@ -105,21 +105,26 @@ jQuery(document).ready(function($){
             get_project_statuses, enable_all_btns);
     };
 
-    function confirm_destroy() {
+    function confirm_destroy(project_directory, project_name) {
         $( "#destroy-dialog" ).dialog({
+            title: "Destroy " + project_name + " project?",
 	        autoOpen: false,
 	        width: 400,
+            dialogClass: "no-close",
 	        buttons: [
 		        {
 			        text: "Oops - No",
 			        click: function() {
 				        $( this ).dialog( "close" );
+                        enable_all_btns();
 			        }
 		        },
 		        {
 			        text: "Yes - Destroy!",
 			        click: function() {
 				        $( this ).dialog( "close" );
+                        project_action(project_directory, "project-destroy", 
+                            "Destroy", get_project_statuses, enable_all_btns)
 			        }
 		        }
 	        ]
@@ -127,11 +132,8 @@ jQuery(document).ready(function($){
         $( "#destroy-dialog" ).dialog( "open" );
     };
 
-    function project_destroy(project_directory){
-        confirm_destroy();
-        enable_all_btns();
-        /*project_action(project_directory, "project-destroy", "Destroy", 
-            get_project_statuses, enable_all_btns);*/
+    function project_destroy(project_directory, project_name){
+        confirm_destroy(project_directory, project_name);
     };
 
     function disable_all_btns(){
@@ -200,7 +202,8 @@ jQuery(document).ready(function($){
                                         $(btn).attr("value", "Destroy");
                                         $(btn).click(function(){
                                             disable_all_btns();
-                                            project_destroy(status["project_directory"]);
+                                            project_destroy(status["project_directory"],
+                                                status["project_name"]);
                                         });
                                     }));
                                     break;
@@ -235,7 +238,8 @@ jQuery(document).ready(function($){
                                         $(btn).attr("value", "Destroy");
                                         $(btn).click(function(){
                                             disable_all_btns();
-                                            project_destroy(status["project_directory"]);
+                                            project_destroy(status["project_directory"],
+                                                status["project_name"]);
                                         });
                                     }));
                                     break;

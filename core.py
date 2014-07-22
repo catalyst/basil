@@ -356,7 +356,8 @@ def run_vagrant_cmd(command_list, project_directory):
     unused, stderr = p.communicate()
     if stderr:
         raise Exception("Command \"{}\" failed. Reason: {}"
-            .format(" ".join(command_list), str(stderr, "utf-8")))
+            .format(" ".join(command_list), str(stderr, "utf-8")
+            .replace("\n", " ")))
     
 def start_project(project_directory):
     """
