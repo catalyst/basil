@@ -29,6 +29,9 @@ some vagrant content to make the vagrant file for.
 
 templates are all stored in a standard location (/etc/?) somewhere. Currently
 testing with a local path.
+
+Once a template has made a project, it has no further connection to that
+project.
 """
 
 from collections import namedtuple
@@ -48,28 +51,18 @@ import validation
 templates_dir = settings.templates_dir
 projects_dir = settings.projects_dir
 
-TemplateInfo = namedtuple('TemplateInfo', ('name', 'title', 'description'))
+TemplateInfo = namedtuple('TemplateInfo', ('name', 'title', 'description',
+    'template_version'))
 
 Field = namedtuple('Field', ('name', 'type', 'title', 'description', 'default',
     'validators'))
 # http://docs.vagrantup.com/v2/cli/machine-readable.html
-ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'state',
-    'state_human_short', 'state_human_long'))
+ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'template_name',
+    'template_version', 'state', 'state_human_short', 'state_human_long'))
 
 # Project directory is an absolute path. We only want to store template_name
 ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
-    'actions'))
-
-# @TODO: How can we specify mutually exclusively available actions? E.g. Start/Stop.
-# We probably need a model of actions setting the state of a project, and only
-# being available in certain states?
-# Store the state in a project's .basil file, along with the values used to
-# create the project?
-default_actions = {
-    'up': 'Start',
-    'down': 'Stop',
-    'destroy': 'Destroy',
-}
+    'template_version'))
 
 default_fields = [
     Field('project_name', 'text', 'Project name', 'The name of this project',
@@ -134,7 +127,8 @@ def get_templates():
         config = template_load_config(template_name)
         template_infos.append(TemplateInfo(template_name,
             config[keys.TEMPLATE_CONFIG_TITLE],
-            config[keys.TEMPLATE_CONFIG_DESCRIPTION]))
+            config[keys.TEMPLATE_CONFIG_DESCRIPTION],
+            config[keys.TEMPLATE_CONFIG_TEMPLATE_VERSION]))
     return template_infos
 
 def get_fields(template_name):
@@ -249,13 +243,13 @@ def create(template_name, values):
             process_func(values)
     project_name = values[keys.PROJECT_NAME]
     # Copy vagrant template
-    project_path = join(projects_dir, project_name)
-    if os.path.exists(project_path):
+    project_directory = join(projects_dir, project_name)
+    if os.path.exists(project_directory):
         raise Exception("The \"{}\" project already exists so either "
             "\"Destroy Project\" or choose another name".format(project_name))
     try:
         shutil.copytree(join(templates_dir, template_name, keys.PROJECT_BASE),
-            project_path)
+            project_directory)
     except Exception as e:
         raise Exception("Unable to create project from template \"{}\". "
             "Original error: {}".format(template_name, e))
@@ -264,7 +258,7 @@ def create(template_name, values):
     to_process_rename = []
     # Topdown false, so that we will work on subdirectories first, which we need
     # in order to rename effectively.
-    for root, dirs, files in os.walk(project_path, topdown=False):
+    for root, dirs, files in os.walk(project_directory, topdown=False):
         for path in [ join(root, name) for name in files ]:
             process_rewrite(path, values)
         for path in  [ join(root, name) for name in files + dirs ]:
@@ -272,10 +266,11 @@ def create(template_name, values):
     # Create internal basil config file (.basil)
     project_config = {keys.PROJECT_TEMPLATE_NAME: template_name,
         keys.PROJECT_VALUES: values}
-    with open(join(project_path, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
+    with open(join(project_directory, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
         json.dump(project_config, f)
     # Start the project.
-    run(project_name, "up")
+    start_project(project_directory)
+    view_project(project_directory)
 
 def get_projects():
     """
@@ -288,9 +283,10 @@ def get_projects():
     for project_name in project_names:
         project_config = project_load_config(project_name)
         template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
+        template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
         template_config = template_load_config(template_name)
         project_infos.append(ProjectInfo(project_name, template_name,
-            template_config[keys.TEMPLATE_CONFIG_ACTIONS])) # @Later - ensure anything expected ends up in the schema for testing config.json
+            template_version)) # @Later - ensure anything expected ends up in the schema for testing config.json
     return project_infos
 
 def get_project_statuses():
@@ -301,10 +297,11 @@ def get_project_statuses():
     project_statuses = []
     for project_info in project_infos:
         project_statuses.append(get_project_status(project_info.project_name,
-            project_info.template_name))
+            project_info.template_name, project_info.template_version))
     return project_statuses
 
-def get_project_status_via_std_vagrant(project_name, project_directory):
+def get_project_status_via_std_vagrant(project_name, project_directory,
+        template_name, template_version):
     """
     http://docs.vagrantup.com/v2/cli/machine-readable.html
     Note - API not stabilised yet
@@ -325,7 +322,8 @@ def get_project_status_via_std_vagrant(project_name, project_directory):
         elif msg_type == keys.VAGRANT_STATUS_STATE_HUMAN_LONG:
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG] = data
     try:
-        project_status = ProjectStatus(project_name,
+        project_status = ProjectStatus(project_name, template_name,
+            template_version,
             status_dict[keys.VAGRANT_STATUS_STATE],
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_SHORT],
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG])
@@ -334,7 +332,7 @@ def get_project_status_via_std_vagrant(project_name, project_directory):
             "\nOriginal error: {}".format(project_directory, e))
     return project_status
 
-def get_project_status(project_name, template_name):
+def get_project_status(project_name, template_name, template_version):
     """
     Uses lib.py version if available, otherwise default approach using vagrant.
     """
@@ -346,26 +344,45 @@ def get_project_status(project_name, template_name):
     if not project_status_func:
         project_status_func = get_project_status_via_std_vagrant
     project_directory = join(projects_dir, project_name)
-    return project_status_func(project_name, project_directory)
+    return project_status_func(project_name, project_directory,
+        template_name, template_version)
 
-def run(project_name, action):
+def run_vagrant_cmd(command_list, project_directory):
     """
-    Runs an action on a project, such as 'up', 'down', or 'destroy'.
-    For each action named x, look for the function action_x, first in the
-    template's lib.py, then in basil's actions.py.
-    @LATER: Arguments for actions?
+    command_list -- must be a list ready for subprocess to use.
     """
-    project_dir = join(projects_dir, project_name)
-    project_config = project_load_config(project_name)
-    template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
-    template_config = template_load_config(template_name)
-    if (action in template_config[keys.TEMPLATE_CONFIG_ACTIONS]
-            or action in default_actions):
-        action = 'action_' + action
-        template_lib = template_load_lib(template_name)
-        if template_lib:
-            action_func = template_lib.__dict__.get(action)
-            if validate_func:
-                return action_func(project_dir)
-        action_func = actions.__dict__.get(action)
-        return action_func(project_dir)
+    p = subprocess.Popen(command_list, cwd=project_directory,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    unused, stderr = p.communicate()
+    if stderr:
+        raise Exception("Command \"{}\" failed. Reason: {}"
+            .format(" ".join(command_list), str(stderr, "utf-8")))
+    
+def start_project(project_directory):
+    """
+    Open project - vagrant up.
+    """
+    run_vagrant_cmd(command_list=["vagrant", "up"],
+        project_directory=project_directory)
+
+def view_project(project_directory):
+    """
+    View output from project e.g. Home Page.
+    """
+    pass
+
+def stop_project(project_directory):
+    """
+    Stop project - vagrant halt.
+    """
+    run_vagrant_cmd(command_list=["vagrant", "halt"],
+        project_directory=project_directory)
+    
+def destroy_project(project_directory):
+    """
+    Destroy project - vagrant destroy. Note - it is assumed that you have
+    already checked with the user that this is what they really want to do.
+    Too late if you get to here ;-).
+    """
+    run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
+        project_directory=project_directory)

@@ -15,6 +15,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+BasilManagerHandler.__init__ does url handler config
+
 """
 
 import cgi
@@ -30,18 +33,72 @@ import urllib
 
 import core
 import keys
+import settings
 
 basil_config_file = 'basil.json'
+not_open_tpl = """
+    Your {} project isn't open. Click on the "Start" button to open it. The
+    project must be open before you can see the output (e.g. a Home Page)
+    or run commands"""
+status2friendly = {
+    "not_created": not_open_tpl,
+    "poweroff": not_open_tpl,
+    "aborted": not_open_tpl + """
+        <br><br>Note - This project was abruptly stopped without having been
+        closed first.
+        Try to avoid this happening by always closing projects before
+        turning off your machine.
+        Not doing so may cause problems which require the project to be
+        destroyed and rebuilt.
+        """,
+    "running": """
+        Your {} project is running which means you can view its output (e.g. a
+        Home Page). Don't forget to Close it before turning off your machine.
+        """}
 
+def get_postvars(handler):
+    """
+    Returns dict of post variables. The vals are lists (usually of just
+    one item).
+    """
+    ctype, unused = cgi.parse_header(handler.headers.get('content-type'))
+    if ctype != 'application/x-www-form-urlencoded':
+        raise Exception("Unexpected content type.")
+    length = int(handler.headers.get('content-length'))
+    b_postvars = urllib.parse.parse_qs(handler.rfile.read(length),
+        keep_blank_values=1)
+    postvars = {str(key, "utf-8"): [str(x, "utf-8") for x in val_list]
+        for key, val_list in b_postvars.items()}
+    return postvars
+    
 
-class Page(object):
-
+class Request(object):
+    
     def __init__(self, handler):
         self.handler = handler
         self.response = 200
-        self.headers = {
-            'Content-type': 'text/html'
-        }
+        self.response_msg = ""
+        self.headers = {}
+
+    def execute(self):
+        """
+        Must send a response and end headers otherwise the HTTPServer retries
+        the request.
+        """
+        response_args = [self.response,]
+        if self.response_msg:
+            response_args.append(self.response_msg)
+        self.handler.send_response(*response_args)
+        for key, value in iter(self.headers.items()):
+            self.handler.send_header(key, value)
+        self.handler.end_headers()
+        
+
+class Page(Request):
+
+    def __init__(self, handler):
+        super(Page, self).__init__(handler)
+        self.headers['Content-type'] = 'text/html'
 
     def title(self):
         return 'Basil'
@@ -50,6 +107,7 @@ class Page(object):
         return """
         <link rel="stylesheet" href="css/main.css">
         <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/underscore-min.js"></script>
         """
 
     def body(self):
@@ -65,7 +123,7 @@ class Page(object):
           </head>
           <body>
             <a href="\" title="Home page">
-                <image id="basil-logo" src="images/basil_logo2.png">
+                <image id="basil-logo" src="images/basil_logo.png">
             </a>
             {body}
           </body>
@@ -74,115 +132,106 @@ class Page(object):
         return content.encode('utf-8')
 
     def get_postvars(self):
-        """
-        Returns dict of where vals are lists (usually of just one item).
-        """
-        ctype, unused = cgi.parse_header(self.handler.headers.get('content-type'))
-        if ctype != 'application/x-www-form-urlencoded':
-            raise Exception("Unexpected content type.")
-        length = int(self.handler.headers.get('content-length'))
-        b_postvars = urllib.parse.parse_qs(self.handler.rfile.read(length),
-            keep_blank_values=1)
-        postvars = {str(key, "utf-8"): [str(x, "utf-8") for x in val_list]
-            for key, val_list in b_postvars.items()}
-        return postvars
+        return get_postvars(self.handler)
 
     def execute(self):
-        self.handler.send_response(self.response)
-        for key, value in iter(self.headers.items()):
-            self.handler.send_header(key, value)
-        self.handler.end_headers()
+        super(Page, self).execute()
         self.handler.wfile.write(self.render())
 
 
-class Asset(object):
+class GetStatuses(Request):
 
     def __init__(self, handler):
-        self.handler = handler
+        super(GetStatuses, self).__init__(handler)
+        self.headers['Content-type'] = 'application/json'
+        self.headers['Accept'] = 'text/plain'
+
+    def execute(self):
+        super(GetStatuses, self).execute()
+        project_statuses = core.get_project_statuses()
+        project_feedback = []
+        for project_status in project_statuses:
+            project_state_display = (project_status.state.title()
+                .replace("_", " "))
+            project_feedback.append({
+                "project_name": project_status.project_name,
+                "project_directory": join(settings.projects_dir,
+                    project_status.project_name),
+                "template_name": project_status.template_name,
+                "template_version": project_status.template_version,
+                "project_state": project_state_display,
+                "project_state_msg": status2friendly.get(project_status.state,
+                    project_status.state_human_long)
+                    .format(project_status.project_name),
+            })
+        payload = json.dumps(project_feedback).encode("utf-8")
+        self.handler.wfile.write(payload)
+
+
+class Action(Request):
+
+    def __init__(self, handler):
+        super(Action, self).__init__(handler)
+        try:
+            self.project_directory = (get_postvars(self.handler)
+                ["project_directory"][0])
+        except Exception as e:
+            raise Exception("Unable to carry out page action. "
+                "Original error: {}".format(e))
+
+
+class ProjectStart(Action):
 
     def execute(self):
         try:
-            unused, ext = os.path.splitext(self.handler.path)
-            if ext in (".js", ".css", ".png"):
-                ctype = types_map[ext]
-                curdir = os.path.split(core.__file__)[0]
-                resource_path = os.path.join(curdir, self.handler.path.strip("/"))
-                #print("resource_path: {}".format(resource_path))
-                text = (ext in (".js", ".css"))
-                mode = "rt" if text else "rb"
-                with open(resource_path, mode) as f:
-                    self.handler.send_response(200)
-                    self.handler.send_header('Content-type', ctype)
-                    self.handler.end_headers()
-                    asset_content = f.read()
-                    if text:
-                        asset_content = asset_content.encode("utf-8")
-                    self.handler.wfile.write(asset_content)
-        except IOError:
-            self.handler.send_error(404)
-            
+            core.start_project(self.project_directory)
+        except Exception as e:
+            self.response = 500
+            self.response_msg = e
+            print(e)
+        super(ProjectStart, self).execute()
+
+
+class ProjectStop(Action):
+
+    def execute(self):
+        core.stop_project(self.project_directory)
+        super(ProjectStop, self).execute()
+
 
 class HomePage(Page):
 
-    def __init__(self, handler):
-        super(HomePage, self).__init__(handler)
-
     def title(self):
-        return 'Basil - Instance Manager'
-
+        return "Basil Project Manager"
+    
+    def head(self):
+        head = super(HomePage, self).head()
+        head += """
+        <link rel="stylesheet" href="css/jquery-ui.min.css">
+        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="js/basil.js"></script>
+        """
+        return head
+    
     def body(self):
         template_infos = core.get_templates()
         options = []
-        descs = []
         for template_info in template_infos:
-            options.append("""<option value="{}">{}</option>"""
-                .format(template_info.name, template_info.title))
-            descs.append("""
-            case "{name}":
-                desc = "{desc}";
-                template_title = "{title}";
-                break;
-            """.format(name=template_info.name, desc=template_info.description,
-            title=template_info.title))
+            options.append("""<option value="{}" data-title="{}"
+            data-description="{}">{}</option>""".format(template_info.name,
+            template_info.title, template_info.description,
+            template_info.title))
         options_html = "\n".join(options)
-        template2desc_html = "\n".join(descs)
-        project_statuses = core.get_project_statuses()
-        project_bits = []
-        if project_statuses:
-            project_bits.append("""<table>
-        <thead>
-        <tr><th>Project</th><th>Status</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        """)
-            buttons_html = """
-            <input type="button" value="Open"
-                onclick="alert('Open not implemented yet ...')">
-            <input type="button" value="Close"
-                onclick="alert('Close not implemented yet ...')">
-            <input type="button" value="Destroy"
-                onclick="alert('Destroy not implemented yet ...')">
-            """
-        for project_status in project_statuses:
-            project_bits.append("""<tr><td class="project-cell">{}</td>
-                <td><strong>{}</strong> - {}</td>
-                <td>{}</td>
-                </tr>""".format(project_status.project_name,
-                project_status.state.replace("_", " ").title(),
-                project_status.state_human_long, buttons_html))
-        if project_statuses:
-            project_bits.append("""</tbody>
-            </table>""")
-        projects_html = ("\n".join(project_bits) if project_statuses
-            else "<p class=\"instructions\">No projects to manage yet.</p>")
         html = """
         <h1>Basil projects</h1>
         <h2>Make a new project</h2>
-        <p class="instructions">Choose a template to base your new project on.</p>
+        <p class="instructions">Choose a template to base your new
+            project on.</p>
         <div id="templates-form">
         <form action="/get-values" method="POST">
         <span class="fld-lbl">Available templates:</span>
-        <select name="{template_dropdown}" class="dropdown" id="templates-dropdown" on_>
+        <select name="{template_dropdown}" class="dropdown"
+            id="templates-dropdown">
         {options}
         </select>
         <input id="apply-button" type="submit" value="APPLY">
@@ -190,33 +239,18 @@ class HomePage(Page):
         </div>
         <p id="template-description"></p>
         <h2>Manage existing projects</h2>
-        {projects}
-        <script type='text/javascript'>
-            jQuery(document).ready(function($){{
-                $(function(){{
-                    $("#templates-dropdown").trigger('change');
-                }});
-                $("#templates-dropdown").change(function(){{
-                    var val = $(this).val();
-                    var desc = undefined;
-                    var template_title = undefined;
-                    switch(val){{
-                        {template2desc}
-                    }}
-                    $("#template-description").text(template_title
-                        + ": " + desc);
-                }});
-            }});
-        </script>
-        """.format(template_dropdown=keys.TEMPLATE, options=options_html,
-            projects=projects_html, template2desc=template2desc_html)
+        <div id="project-statuses">
+        <p id="loading-projects" class=\"instructions\">
+        Loading projects status details ...</p>
+        </div>
+        <div id="destroy-dialog" title="Basic dialog" style="display: none;">
+        <p>This is the default dialog which is useful for displaying information.
+        The dialog window can be moved, resized and closed with the 'x' icon.</p>
+        </div>""".format(template_dropdown=keys.TEMPLATE, options=options_html)
         return html
 
 
 class CreateProject(Page):
-
-    def __init__(self, handler):
-        super(CreateProject, self).__init__(handler)
 
     def title(self):
         return 'Project being built ...'
@@ -245,9 +279,6 @@ class CreateProject(Page):
 
 
 class GetValues(Page):
-
-    def __init__(self, handler):
-        super(GetValues, self).__init__(handler)
 
     def title(self):
         return 'Configure Project'
@@ -312,6 +343,37 @@ class NotFoundPage(Page):
         return 'Sorry, page does not exist.'
 
 
+class Asset(object):
+
+    def __init__(self, handler):
+        self.handler = handler
+
+    def execute(self):
+        """
+        Note - by sending a response and ending the header we don't break
+        HTTPServer.
+        """
+        try:
+            unused, ext = os.path.splitext(self.handler.path)
+            if ext in (".js", ".css", ".png"):
+                ctype = types_map[ext]
+                curdir = os.path.split(core.__file__)[0]
+                resource_path = os.path.join(curdir, self.handler.path.strip("/"))
+                #print("resource_path: {}".format(resource_path))
+                text = (ext in (".js", ".css"))
+                mode = "rt" if text else "rb"
+                with open(resource_path, mode) as f:
+                    self.handler.send_response(200)
+                    self.handler.send_header('Content-type', ctype)
+                    self.handler.end_headers()
+                    asset_content = f.read()
+                    if text:
+                        asset_content = asset_content.encode("utf-8")
+                    self.handler.wfile.write(asset_content)
+        except IOError:
+            self.handler.send_error(404)
+
+
 class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
@@ -320,6 +382,9 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
             (r'images/|css/|js/', {'GET': Asset,}),
             (r'create-project', {'POST': CreateProject,}),
             (r'get-values', {'POST': GetValues,}),
+            (r'get-statuses', {'GET': GetStatuses,}),
+            (r'project-start', {'POST': ProjectStart,}),
+            (r'project-stop', {'POST': ProjectStop,}),
             (r'', {'GET': HomePage,}),
         ]
         super(BasilManagerHandler, self).__init__(
@@ -353,7 +418,7 @@ def run_server():
             httpd = http.server.HTTPServer(('', port), BasilManagerHandler)
         except:
             port += 1
-    print('Basil server running on port: {}'.format(port))
+    print("Basil server running on port: {}".format(port))
     httpd.serve_forever()
 
 if __name__ == "__main__":

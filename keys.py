@@ -16,11 +16,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+ACTION_OPEN = "open" # vagrant up + open start page
+ACTION_EDIT = "edit" # files in shared folder
+ACTION_SSH = "ssh"
+ACTION_HALT = "halt"
+ACTION_DESTROY = "destroy"
+ACTIONS = [ACTION_OPEN, ACTION_EDIT, ACTION_SSH, ACTION_HALT, ACTION_DESTROY]
+
 TEMPLATE = "template"
 
-PROJECT_TEMPLATE_NAME = "template_name"
-PROJECT_VALUES = "values"
 PROJECT_NAME = "project_name"
+PROJECT_TEMPLATE_NAME = "template_name"
+PROJECT_TEMPLATE_VERSION = "template_version"
+PROJECT_VALUES = "values"
 PROJECT_BASE = "project_base"
 
 BASIL_INTERNAL_CONFIG = ".basil"
@@ -29,7 +37,7 @@ TEMPLATE_CONFIG = "config.json"
 TEMPLATE_CONFIG_FIELDS = "fields"
 TEMPLATE_CONFIG_TITLE = "title"
 TEMPLATE_CONFIG_DESCRIPTION = "description"
-TEMPLATE_CONFIG_ACTIONS = "actions"
+TEMPLATE_CONFIG_TEMPLATE_VERSION = "template_version"
 TEMPLATE_CONFIG_PROCESS = "process"
 
 TEMPLATE_FIELD_TITLE = "title"
