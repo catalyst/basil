@@ -210,7 +210,19 @@ def process_rename(path, values):
     for field_name, value in values.items():
         name = name.replace(basil_tag_start + field_name + basil_tag_end, value)
     if name != orig_name:
-        os.rename(join(directory, orig_name), join(directory, name))
+        os.rename(join(directory, orig_name), join(directory, name))    
+
+def populate_templates(project_directory, values):
+    # Rewrite/rename files (replacing basil tags).
+    to_process_rewrite = []
+    to_process_rename = []
+    # Topdown false, so that we will work on subdirectories first, which we need
+    # in order to rename effectively.
+    for root, dirs, files in os.walk(project_directory, topdown=False):
+        for path in [ join(root, name) for name in files ]:
+            process_rewrite(path, values)
+        for path in  [ join(root, name) for name in files + dirs ]:
+            process_rename(path, values)
 
 def create_project_config(template_name, values, project_directory):
     """
@@ -224,8 +236,8 @@ def create_project_config(template_name, values, project_directory):
         keys.PROJECT_VALUES: values}
     # @Later -- check json for required structure
     with open(join(project_directory, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
-        json.dump(project_config, f)    
-
+        json.dump(project_config, f)
+        
 def create(template_name, values):
     """
     Values should be a dictionary, mapping field names to string values. E.g. { 'project_name': 'My New Project' }
@@ -236,7 +248,6 @@ def create(template_name, values):
     * Copies the "vagrant template" *inside* templates_directory/template_name to projects_directory
     * "Fill in the blanks" of the new project directory with values.
     * Place a '.basil' json file in the project, containing values, the template name, and an initial state?
-    * Runs the "up" action on the new project
     """
     # testing
     skip_creation = False
@@ -270,15 +281,7 @@ def create(template_name, values):
         raise Exception("Unable to create project from template \"{}\". "
             "Original error: {}".format(template_name, e))
     # Rewrite/rename files (replacing basil tags).
-    to_process_rewrite = []
-    to_process_rename = []
-    # Topdown false, so that we will work on subdirectories first, which we need
-    # in order to rename effectively.
-    for root, dirs, files in os.walk(project_directory, topdown=False):
-        for path in [ join(root, name) for name in files ]:
-            process_rewrite(path, values)
-        for path in  [ join(root, name) for name in files + dirs ]:
-            process_rename(path, values)
+    populate_templates(project_directory, values)
     # Create internal basil config file (.basil)
     try:
         create_project_config(template_name, values, project_directory)
