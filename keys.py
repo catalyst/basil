@@ -25,10 +25,14 @@ ACTIONS = [ACTION_OPEN, ACTION_EDIT, ACTION_SSH, ACTION_HALT, ACTION_DESTROY]
 
 TEMPLATE = "template"
 
+# POST vars
 PROJECT_NAME = "project_name"
+PROJECT_DIRECTORY = "project_directory"
+
 PROJECT_TEMPLATE_NAME = "template_name"
 PROJECT_TEMPLATE_VERSION = "template_version"
 PROJECT_VALUES = "values"
+
 PROJECT_BASE = "project_base"
 
 BASIL_INTERNAL_CONFIG = ".basil"

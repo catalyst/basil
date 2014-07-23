@@ -125,11 +125,12 @@ def get_templates():
     template_names = [x for x in os.listdir(templates_dir)
         if os.path.isdir(join(templates_dir, x))]
     for template_name in template_names:
-        config = template_load_config(template_name)
-        template_infos.append(TemplateInfo(template_name,
-            config[keys.TEMPLATE_CONFIG_TITLE],
-            config[keys.TEMPLATE_CONFIG_DESCRIPTION],
-            config[keys.TEMPLATE_CONFIG_TEMPLATE_VERSION]))
+        template_config = template_load_config(template_name)
+        template_infos.append(TemplateInfo(
+            template_name,
+            template_config[keys.TEMPLATE_CONFIG_TITLE],
+            template_config[keys.TEMPLATE_CONFIG_DESCRIPTION],
+            template_config[keys.TEMPLATE_CONFIG_TEMPLATE_VERSION]))
     return template_infos
 
 def get_fields(template_name):
@@ -211,6 +212,20 @@ def process_rename(path, values):
     if name != orig_name:
         os.rename(join(directory, orig_name), join(directory, name))
 
+def create_project_config(template_name, values, project_directory):
+    """
+    Create internal basil config file (.basil)
+    """
+    template_config = template_load_config(template_name)
+    template_version = template_config[keys.TEMPLATE_CONFIG_TEMPLATE_VERSION]
+    project_config = {
+        keys.PROJECT_TEMPLATE_NAME: template_name,
+        keys.PROJECT_TEMPLATE_VERSION: template_version,
+        keys.PROJECT_VALUES: values}
+    # @Later -- check json for required structure
+    with open(join(project_directory, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
+        json.dump(project_config, f)    
+
 def create(template_name, values):
     """
     Values should be a dictionary, mapping field names to string values. E.g. { 'project_name': 'My New Project' }
@@ -265,13 +280,12 @@ def create(template_name, values):
         for path in  [ join(root, name) for name in files + dirs ]:
             process_rename(path, values)
     # Create internal basil config file (.basil)
-    project_config = {keys.PROJECT_TEMPLATE_NAME: template_name,
-        keys.PROJECT_VALUES: values}
-    with open(join(project_directory, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
-        json.dump(project_config, f)
-    # Start the project.
-    start_project(project_directory)
-    view_project(project_directory)
+    try:
+        create_project_config(template_name, values, project_directory)
+    except Exception:
+        shutil.rmtree(project_directory)
+        raise Exception("Unable to create project configuration file ({}) "
+            "so project not created.".format(keys.BASIL_INTERNAL_CONFIG))
 
 def get_projects():
     """
@@ -282,12 +296,16 @@ def get_projects():
     project_names = [x for x in os.listdir(projects_dir)
         if os.path.isdir(join(projects_dir, x))]
     for project_name in project_names:
-        project_config = project_load_config(project_name)
-        template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
-        template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
-        template_config = template_load_config(template_name)
-        project_infos.append(ProjectInfo(project_name, template_name,
-            template_version)) # @Later - ensure anything expected ends up in the schema for testing config.json
+        try:
+            project_config = project_load_config(project_name)
+            template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
+            template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
+            template_config = template_load_config(template_name)
+            project_infos.append(ProjectInfo(project_name, template_name,
+                template_version)) # @Later - ensure anything expected ends up in the schema for testing config.json
+        except Exception as e:
+            raise Exception("Unable to get project details for \"{}\" "
+                "project. {}".format(project_name, e))
     return project_infos
 
 def get_project_statuses():
@@ -348,20 +366,20 @@ def get_project_status(project_name, template_name, template_version):
     return project_status_func(project_name, project_directory,
         template_name, template_version)
 
-def get_port_forwarded_collision_msg(error):
+def get_port_forwarded_collision_msg(cmd, error):
     forwarded_collision_result_pattern = (r"The forwarded port to (\d{4,5}) "
         r"is already in use on the host machine")
     port_forwarded_collision_result = re.search(
-        forwarded_collision_result_pattern, error)
+        forwarded_collision_result_pattern, error.replace("\n", " ")) # put on one line before searching
     try:
         port_forwarded = port_forwarded_collision_result.group(1)
     except Exception:
         port_forwarded = False
     if port_forwarded:
-        msg = ("Unable to start project because it wants to share content "
+        msg = ("Try again after stopping any other projects that are open."
+        "\nUnable to start project because it wants to share content "
         "with you over a port ({}) that is already in use - perhaps by "
-        "another project. Try stopping other projects first.".format(
-        port_forwarded))
+        "another project.".format(port_forwarded))
     else:
         msg = None
     return msg
@@ -370,26 +388,34 @@ def run_vagrant_cmd(command_list, project_directory):
     """
     command_list -- must be a list ready for subprocess to use.
 
-    Don't include lines breaks in msg - only the first line is sent via the
-    header.
+    Don't include lines breaks in exception - only the first line is sent via
+    the header. Will be be displaying messages to user in html so use <br>
+    instead. OK to use other html markup as well - it does no real harm if
+    displaying in terminal.
 
-    error_transforms -- functions taking error string as input and returning
-    msg - either string message or None.
+    error_transforms -- functions taking cmd string and error string as input
+    and returning a complete message if the error is of the correct sort. If
+    not the right sort of error returns None.
+
+    If no transformations of the error message occur we use the cmd and the
+    raw error to form a basic error message.
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     unused, stderr = p.communicate()
     if stderr:
-        error = str(stderr, "utf-8").replace("\n", " ") # put on one line before searching
-        msg = error
+        cmd = " ".join(command_list)
+        error = str(stderr, "utf-8")
+        msg = None
         error_transforms = [get_port_forwarded_collision_msg, ]
         for error_transform in error_transforms:
-            trans_msg = error_transform(error)
-            if trans_msg:
-                msg = trans_msg
+            transformed_msg = error_transform(cmd, error)
+            if transformed_msg:
+                msg = transformed_msg
                 break
-        raise Exception("Command \"{}\" failed. Reason: {}"
-            .format(" ".join(command_list), msg.replace("\n", " ")))
+        if not msg:
+            msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
+        raise Exception(msg.replace("\n", "<br><br>"))
     
 def start_project(project_directory):
     """

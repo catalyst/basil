@@ -76,8 +76,9 @@ jQuery(document).ready(function($){
             + ": " + template_description);
     });
     
-    function project_action(project_directory, url, action_lbl, 
-            success_handler, fail_handler){
+    function project_action(project_directory, project_name, url, 
+            action_lbl_do, action_lbl_doing, success_handler, fail_handler){
+        $("body").css("cursor", "progress");
         $.ajax({type: "POST",
                 url: url,
                 data: {
@@ -88,25 +89,54 @@ jQuery(document).ready(function($){
                 /*console.log("AJAX call to " + url 
                     + " succeeded. project_directory was " + project_directory)*/
                 success_handler();
+                $("body").css("cursor", "default");
             })
             .fail(function(jqXHR, error, ex){
                 fail_handler();
-                alert("Unable to " + action_lbl + " project. Cause: " + ex);
+                var title = "Problem " + action_lbl_doing + " \"" + project_name 
+                    + "\"";
+                var msg = "Unable to " + action_lbl_do + " \"" + project_name 
+                    + "\" project.<br><br>" + ex;
+                $("body").css("cursor", "default");
+                ok_dialog(title, msg);
             }); 
     };
 
-    function project_start(project_directory){
-        project_action(project_directory, "project-start", "Start", 
+    function project_start(project_directory, project_name){
+        project_action(project_directory, project_name, 
+            "project-start", "start", "starting",
             get_project_statuses, enable_all_btns);
     };
     
-    function project_stop(project_directory){
-        project_action(project_directory, "project-stop", "Stop", 
+    function project_stop(project_directory, project_name){
+        project_action(project_directory, project_name, 
+            "project-stop", "stop", "stopping", 
             get_project_statuses, enable_all_btns);
     };
 
+    function ok_dialog(title, msg){
+        $("#dialog").html("<p>" + msg + "</p>");
+        $("#dialog").dialog({
+            title: title,
+	        autoOpen: false,
+	        width: 400,
+            dialogClass: "no-close",
+	        buttons: [
+		        {
+			        text: "OK",
+			        click: function() {
+				        $( this ).dialog("close");
+			        }
+		        }
+	        ]
+        });
+        $("#dialog").dialog("open");
+    };
+
     function confirm_destroy(project_directory, project_name) {
-        $( "#destroy-dialog" ).dialog({
+        $("#dialog").html("<p>Destroying your project is irreversible. "
+            + "Do you really want to destroy it?</p>");
+        $("#dialog").dialog({
             title: "Destroy " + project_name + " project?",
 	        autoOpen: false,
 	        width: 400,
@@ -115,21 +145,22 @@ jQuery(document).ready(function($){
 		        {
 			        text: "Oops - No",
 			        click: function() {
-				        $( this ).dialog( "close" );
+				        $( this ).dialog("close");
                         enable_all_btns();
 			        }
 		        },
 		        {
 			        text: "Yes - Destroy!",
 			        click: function() {
-				        $( this ).dialog( "close" );
-                        project_action(project_directory, "project-destroy", 
-                            "Destroy", get_project_statuses, enable_all_btns)
+				        $( this ).dialog("close");
+                        project_action(project_directory, project_name, 
+                            "project-destroy", "Destroy", get_project_statuses, 
+                            enable_all_btns)
 			        }
 		        }
 	        ]
         });
-        $( "#destroy-dialog" ).dialog( "open" );
+        $("#dialog").dialog("open");
     };
 
     function project_destroy(project_directory, project_name){
@@ -192,7 +223,8 @@ jQuery(document).ready(function($){
                                         $(btn).attr("value", "Start");
                                         $(btn).click(function(){
                                             disable_all_btns();
-                                            project_start(status["project_directory"]);
+                                            project_start(status["project_directory"], 
+                                                status["project_name"]);
                                         });
                                     }));
                                     $(td).append(make_el("input", ["float-right"], function(btn){
@@ -228,7 +260,8 @@ jQuery(document).ready(function($){
                                         $(btn).attr("value", "Stop");
                                         $(btn).click(function(){
                                             disable_all_btns();
-                                            project_stop(status["project_directory"]);
+                                            project_stop(status["project_directory"], 
+                                                status["project_name"]);
                                         });
                                     }));
                                     $(td).append(make_el("input", ["float-right"], function(btn){

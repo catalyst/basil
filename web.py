@@ -177,8 +177,8 @@ class Action(Request):
     def __init__(self, handler):
         super(Action, self).__init__(handler)
         try:
-            self.project_directory = (get_postvars(self.handler)
-                ["project_directory"][0])
+            postvars = get_postvars(self.handler)
+            self.project_directory = postvars[keys.PROJECT_DIRECTORY][0]
         except Exception as e:
             raise Exception("Unable to carry out page action. "
                 "Original error: {}".format(e))
@@ -258,9 +258,7 @@ class HomePage(Page):
         <p id="loading-projects" class=\"instructions\">
         Loading projects status details ...</p>
         </div>
-        <div id="destroy-dialog" title="Destroy Project" style="display: none;">
-        <p>Destroying your project is irreversible. Do you really want to
-        destroy it?</p>
+        <div id="dialog" title="Destroy Project" style="display: none;">
         </div>""".format(template_dropdown=keys.TEMPLATE, options=options_html)
         return html
 
@@ -274,23 +272,34 @@ class CreateProject(Page):
         postvars = self.get_postvars()
         template_name = postvars[keys.TEMPLATE][0]
         project_name = postvars[keys.PROJECT_NAME][0]
+        project_directory = join(projects_dir, project_name)
         values = {key: val[0] for key, val in postvars.items()
             if key != keys.TEMPLATE}
         try:
             core.create(template_name, values)
-            body_html = """
+        except Exception as e:
+            return ("Was unable to create \"{}\" project.<br>"
+                "Original error: {}".format(project_name, e))
+        try:
+            core.start_project(project_directory)
+        except Exception as e:
+            return ("\"{}\" project successfully created but was unable to "
+                "start it.<br>Original error: {}".format(project_name, e))
+        try:
+            core.view_project(project_directory)
+        except Exception as e:
+            return ("\"{}\" project successfully created and started but was "
+                "unable to view it.<br>Original error: {}".format(project_name,
+                e))
+        return """
             <h1>Success!</h1>
 
-            <p class="instructions">Your "{project_name}" project was successfully built.</p>
+            <p class="instructions">Your "{project_name}" project was
+            successfully built.</p>
 
             <p>Click <a target='_blank' href='http://localhost:8888/'>
             open {project_name}</a> and see feedback from your project.</p>
-
             """.format(project_name=project_name)
-        except Exception as e:
-            body_html = ("Was unable to build project.<br>Original error: {}"
-                .format(e))
-        return body_html
 
 
 class GetValues(Page):
