@@ -32,6 +32,7 @@ PROJECT_DIRECTORY = "project_directory"
 PROJECT_TEMPLATE_NAME = "template_name"
 PROJECT_TEMPLATE_VERSION = "template_version"
 PROJECT_VALUES = "values"
+PROJECT_PORTS = "ports"
 
 PROJECT_BASE = "project_base"
 
@@ -43,6 +44,7 @@ TEMPLATE_CONFIG_TITLE = "title"
 TEMPLATE_CONFIG_DESCRIPTION = "description"
 TEMPLATE_CONFIG_TEMPLATE_VERSION = "template_version"
 TEMPLATE_CONFIG_PROCESS = "process"
+TEMPLATE_CONFIG_PORTS = "port_tags"
 
 TEMPLATE_FIELD_TITLE = "title"
 TEMPLATE_FIELD_DESCRIPTION = "description"

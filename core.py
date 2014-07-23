@@ -63,7 +63,7 @@ ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'template_name',
 
 # Project directory is an absolute path. We only want to store template_name
 ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
-    'template_version'))
+    'template_version', 'ports'))
 
 default_fields = [
     Field('project_name', 'text', 'Project name', 'The name of this project',
@@ -72,6 +72,8 @@ default_fields = [
 
 basil_tag_start = '{{__basil__.'
 basil_tag_end = '}}'
+
+port_range_start = 45600
 
 def template_load_lib(template_name):
     try:
@@ -159,6 +161,26 @@ def get_default_field_validators(field_name):
     field_name2validators = {x.name: x.validators for x in default_fields}
     return field_name2validators[field_name]
 
+def get_ports(template_name):
+    """
+    Return a dictionary that maps each "port tag" in the template to an
+    available port that isn't in use by any other projects.
+    """
+    assigned_ports = {}
+    config = template_load_config(template_name)
+    if keys.TEMPLATE_CONFIG_PORTS in config:
+        port_tags = config[keys.TEMPLATE_CONFIG_PORTS]
+        used_ports = []
+        for project in get_projects():
+            used_ports += project.ports.values()
+        current_port = port_range_start=
+        for port_tag in port_tags:
+            while current_port in used_ports:
+                current_port += 1
+            assigned_ports[port_tag] = current_port
+            current_port += 1
+    return assigned_ports
+
 def validate_field(template_name, field_name, value):
     """
     Call each validator defined for the field in the template with the given
@@ -199,7 +221,7 @@ def validate_field(template_name, field_name, value):
 def process_rewrite(path, values):
     with fileinput.input(files=(path), inplace=True) as f:
         for line in f:
-            for field_name, value in values.items():
+            for str(field_name), str(value) in values.items():
                 line = line.replace(
                     basil_tag_start + field_name + basil_tag_end, value)
             print(line, end='')
@@ -207,10 +229,10 @@ def process_rewrite(path, values):
 def process_rename(path, values):
     directory, name = os.path.split(path)
     orig_name = name
-    for field_name, value in values.items():
+    for str(field_name), str(value) in values.items():
         name = name.replace(basil_tag_start + field_name + basil_tag_end, value)
     if name != orig_name:
-        os.rename(join(directory, orig_name), join(directory, name))    
+        os.rename(join(directory, orig_name), join(directory, name))
 
 def populate_templates(project_directory, values):
     # Rewrite/rename files (replacing basil tags).
@@ -224,7 +246,7 @@ def populate_templates(project_directory, values):
         for path in  [ join(root, name) for name in files + dirs ]:
             process_rename(path, values)
 
-def create_project_config(template_name, values, project_directory):
+def create_project_config(template_name, values, ports, project_directory):
     """
     Create internal basil config file (.basil)
     """
@@ -233,11 +255,13 @@ def create_project_config(template_name, values, project_directory):
     project_config = {
         keys.PROJECT_TEMPLATE_NAME: template_name,
         keys.PROJECT_TEMPLATE_VERSION: template_version,
-        keys.PROJECT_VALUES: values}
+        keys.PROJECT_VALUES: values,
+        keys.PROJECT_PORTS: ports,
+    }
     # @Later -- check json for required structure
     with open(join(project_directory, keys.BASIL_INTERNAL_CONFIG), 'w') as f:
         json.dump(project_config, f)
-        
+
 def create(template_name, values):
     """
     Values should be a dictionary, mapping field names to string values. E.g. { 'project_name': 'My New Project' }
@@ -269,6 +293,8 @@ def create(template_name, values):
         if process_func:
             process_func(values)
     project_name = values[keys.PROJECT_NAME]
+    # Get ports
+    ports = get_ports(template_name)
     # Copy vagrant template
     project_directory = join(projects_dir, project_name)
     if os.path.exists(project_directory):
@@ -281,10 +307,12 @@ def create(template_name, values):
         raise Exception("Unable to create project from template \"{}\". "
             "Original error: {}".format(template_name, e))
     # Rewrite/rename files (replacing basil tags).
-    populate_templates(project_directory, values)
+    rewrite_values = values.copy()
+    rewrite_values.update(ports)
+    populate_templates(project_directory, rewrite_values)
     # Create internal basil config file (.basil)
     try:
-        create_project_config(template_name, values, project_directory)
+        create_project_config(template_name, values, ports, project_directory)
     except Exception:
         shutil.rmtree(project_directory)
         raise Exception("Unable to create project configuration file ({}) "
@@ -303,9 +331,10 @@ def get_projects():
             project_config = project_load_config(project_name)
             template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
             template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
+            ports = project_config[keys.PROJECT_PORTS]
             template_config = template_load_config(template_name)
             project_infos.append(ProjectInfo(project_name, template_name,
-                template_version)) # @Later - ensure anything expected ends up in the schema for testing config.json
+                template_version, ports)) # @Later - ensure anything expected ends up in the schema for testing config.json
         except Exception as e:
             raise Exception("Unable to get project details for \"{}\" "
                 "project. {}".format(project_name, e))
@@ -419,7 +448,8 @@ def run_vagrant_cmd(command_list, project_directory):
         if not msg:
             msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
         raise Exception(msg.replace("\n", "<br><br>"))
-    
+
+# @TODO: Should we be passing the project_name instead?
 def start_project(project_directory):
     """
     Open project - vagrant up.
@@ -439,7 +469,7 @@ def stop_project(project_directory):
     """
     run_vagrant_cmd(command_list=["vagrant", "halt"],
         project_directory=project_directory)
-    
+
 def destroy_project(project_directory):
     """
     Destroy project - vagrant destroy. Note - it is assumed that you have
@@ -449,4 +479,4 @@ def destroy_project(project_directory):
     run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
         project_directory=project_directory)
     shutil.rmtree(project_directory)
-    
+

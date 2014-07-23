@@ -35,6 +35,8 @@ import core
 import keys
 import settings
 
+projects_dir = settings.projects_dir
+
 basil_config_file = 'basil.json'
 not_open_tpl = """
     Your {} project isn't open. Click on the "Start" button to open it. The
@@ -70,10 +72,10 @@ def get_postvars(handler):
     postvars = {str(key, "utf-8"): [str(x, "utf-8") for x in val_list]
         for key, val_list in b_postvars.items()}
     return postvars
-    
+
 
 class Request(object):
-    
+
     def __init__(self, handler):
         self.handler = handler
         self.response = 200
@@ -92,7 +94,7 @@ class Request(object):
         for key, value in iter(self.headers.items()):
             self.handler.send_header(key, value)
         self.handler.end_headers()
-        
+
 
 class Page(Request):
 
@@ -154,20 +156,23 @@ class GetStatuses(Request):
         super(GetStatuses, self).execute()
         project_statuses = core.get_project_statuses()
         project_feedback = []
-        for project_status in project_statuses:
-            project_state_display = (project_status.state.title()
-                .replace("_", " "))
-            project_feedback.append({
-                "project_name": project_status.project_name,
-                "project_directory": join(settings.projects_dir,
-                    project_status.project_name),
-                "template_name": project_status.template_name,
-                "template_version": project_status.template_version,
-                "project_state": project_state_display,
-                "project_state_msg": status2friendly.get(project_status.state,
-                    project_status.state_human_long)
-                    .format(project_status.project_name),
-            })
+        if project_statuses:
+            for project_status in project_statuses:
+                project_state_display = (project_status.state.title()
+                    .replace("_", " "))
+                project_feedback.append({
+                    "project_name": project_status.project_name,
+                    "project_directory": join(settings.projects_dir,
+                        project_status.project_name),
+                    "template_name": project_status.template_name,
+                    "template_version": project_status.template_version,
+                    "project_state": project_state_display,
+                    "project_state_msg": status2friendly.get(
+                        project_status.state, project_status.state_human_long)
+                        .format(project_status.project_name),
+                })
+        else:
+            project_feedback = "You currently don't have any projects."
         payload = json.dumps(project_feedback).encode("utf-8")
         self.handler.wfile.write(payload)
 
@@ -218,7 +223,7 @@ class HomePage(Page):
 
     def title(self):
         return "Basil Project Manager"
-    
+
     def head(self):
         head = """<link rel="stylesheet" href="css/jquery-ui.min.css">"""
         head += super(HomePage, self).head() # we want main.css to override other css
@@ -227,7 +232,7 @@ class HomePage(Page):
         <script type="text/javascript" src="js/basil.js"></script>
         """
         return head
-    
+
     def body(self):
         template_infos = core.get_templates()
         options = []

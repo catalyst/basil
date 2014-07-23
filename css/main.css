@@ -32,7 +32,6 @@ h1 {
     padding-top: 20px;
 }
 h2 {
-    float: left;
     clear: both;
     color: #2e8539;
     font-weight: bold;
@@ -63,7 +62,7 @@ th#actions-col {
 }
 .project-name {
     font-style: italic;
-    font-size: 15px;   
+    font-size: 15px;
 }
 .project-template {
     font-size: 9px;
@@ -82,7 +81,7 @@ th#actions-col {
 .fld-lbl {
     float: left;
     clear: both;
-    margin-right: 15px;    
+    margin-right: 15px;
 }
 .dropdown {
     float: right;
