@@ -473,7 +473,35 @@ def run_vagrant_cmd(command_list, project_directory):
     raw error to form a basic error message.
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+    while True:
+        if p.poll() == None:
+            while True:    
+                msg = str(p.stdout.readline(), "utf-8").strip()
+                print(msg) # feed back somehow
+                if not msg:
+                    break
+            error = str(p.stderr.readline(), "utf-8").strip()
+            if error:
+                cmd = " ".join(command_list)
+                msg = None
+                error_transforms = [get_port_forwarded_collision_msg, ]
+                for error_transform in error_transforms:
+                    transformed_msg = error_transform(cmd, error)
+                    if transformed_msg:
+                        msg = transformed_msg
+                        break
+                if not msg:
+                    msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
+                raise Exception(msg.replace("\n", "<br><br>"))
+        else:
+            break
+    return
+
+
+
+
+    
     unused, stderr = p.communicate()
     if stderr:
         cmd = " ".join(command_list)
