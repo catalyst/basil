@@ -305,10 +305,10 @@ class CreateProject(Page):
             return ("\"{}\" project successfully created and started but was "
                 "unable to view it.<br>Original error: {}".format(project_name,
                 e))
-        # assumes the port we want has been tagged "webserver" - @Later make a proper requirement
+        # assumes the port we want has been tagged "webserver_port" - @Later make a proper requirement
         project_config = core.project_load_config(project_name)
         port2open = project_config[keys.PROJECT_PORTS].get(
-            keys.TEMPLATE_CONFIG_WEBSERVER, 8888)
+            keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)
         return """
             <h1>Success!</h1>
 

@@ -411,7 +411,7 @@ def get_project_status_via_vagrant(project_name, template_name,
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG] = data
     project_config = project_load_config(project_name)
     webserver_port = project_config[keys.PROJECT_PORTS].get(
-        keys.TEMPLATE_CONFIG_WEBSERVER, 8888)
+        keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)
     try:
         project_status = ProjectStatus(project_name, template_name,
             template_version,
@@ -497,25 +497,6 @@ def run_vagrant_cmd(command_list, project_directory):
         else:
             break
     return
-
-
-
-
-    
-    unused, stderr = p.communicate()
-    if stderr:
-        cmd = " ".join(command_list)
-        error = str(stderr, "utf-8")
-        msg = None
-        error_transforms = [get_port_forwarded_collision_msg, ]
-        for error_transform in error_transforms:
-            transformed_msg = error_transform(cmd, error)
-            if transformed_msg:
-                msg = transformed_msg
-                break
-        if not msg:
-            msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
-        raise Exception(msg.replace("\n", "<br><br>"))
 
 # @TODO: Should we be passing the project_name instead?
 def start_project(project_directory):
