@@ -114,25 +114,6 @@ jQuery(document).ready(function($){
             get_project_statuses, enable_all_btns);
     };
 
-    function ok_dialog(title, msg){
-        $("#dialog").html("<p>" + msg + "</p>");
-        $("#dialog").dialog({
-            title: title,
-	        autoOpen: false,
-	        width: 400,
-            dialogClass: "no-close",
-	        buttons: [
-		        {
-			        text: "OK",
-			        click: function() {
-				        $( this ).dialog("close");
-			        }
-		        }
-	        ]
-        });
-        $("#dialog").dialog("open");
-    };
-
     function confirm_destroy(project_directory, project_name) {
         $("#dialog").html("<p>Destroying your project is irreversible. "
             + "Do you really want to destroy it?</p>");
@@ -154,8 +135,8 @@ jQuery(document).ready(function($){
 			        click: function() {
 				        $( this ).dialog("close");
                         project_action(project_directory, project_name,
-                            "project-destroy", "Destroy", get_project_statuses,
-                            enable_all_btns)
+                            "project-destroy", "destroy", "destroying", 
+                            get_project_statuses, enable_all_btns)
 			        }
 		        }
 	        ]
@@ -165,6 +146,25 @@ jQuery(document).ready(function($){
 
     function project_destroy(project_directory, project_name){
         confirm_destroy(project_directory, project_name);
+    };
+
+    function ok_dialog(title, msg){
+        $("#dialog").html("<p>" + msg + "</p>");
+        $("#dialog").dialog({
+            title: title,
+	        autoOpen: false,
+	        width: 400,
+            dialogClass: "no-close",
+	        buttons: [
+		        {
+			        text: "OK",
+			        click: function() {
+				        $( this ).dialog("close");
+			        }
+		        }
+	        ]
+        });
+        $("#dialog").dialog("open");
     };
 
     function disable_all_btns(){
@@ -178,7 +178,7 @@ jQuery(document).ready(function($){
     };
 
     function display_project_statuses(response){
-        $("#loading-projects").remove();
+        $("#loading-projects").text("");
         $("#project-statuses > table").remove();
         var projs = $("#project-statuses");
         projs.append(make_el("table", [], function(table){
@@ -305,6 +305,7 @@ jQuery(document).ready(function($){
                     $("body").css("cursor", "default");
                 } else {
                     $("#loading-projects").text("You don't have any projects yet.");
+                    $("#project-statuses > table").remove();
                     $("body").css("cursor", "default");
                 };
             })
