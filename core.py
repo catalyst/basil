@@ -44,7 +44,6 @@ import re
 import shutil
 import subprocess
 
-import actions
 import keys
 import settings
 import validation
@@ -59,7 +58,8 @@ Field = namedtuple('Field', ('name', 'type', 'title', 'description', 'default',
     'validators'))
 # http://docs.vagrantup.com/v2/cli/machine-readable.html
 ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'template_name',
-    'template_version', 'state', 'state_human_short', 'state_human_long'))
+    'template_version', 'state', 'state_human_short', 'state_human_long',
+    'webserver_port'))
 
 # Project directory is an absolute path. We only want to store template_name
 ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
@@ -163,7 +163,23 @@ def get_default_field_validators(field_name):
 
 def get_ports(template_name):
     """
-    Return a dictionary that maps each "port tag" in the template to an
+    We want to be able to assign ports to the projects to avoid potential
+    collisions. Some templates will need to use the same port in multiple
+    places e.g. a webserver port. E.g.
+
+    Inside project:
+    
+       config_somewhere: .... webserver_port
+       other_config: ... ssh_port
+       other_config: ... webserver_port
+
+    we want basil to do something like:
+
+       config_somewhere: .... 8080
+       other_config: ... 8022
+       other_config: ... 8080
+
+    Returns a dictionary that maps each "port tag" in the template to an
     available port that isn't in use by any other projects.
     """
     assigned_ports = {}
@@ -173,7 +189,7 @@ def get_ports(template_name):
         used_ports = []
         for project in get_projects():
             used_ports += project.ports.values()
-        current_port = port_range_start=
+        current_port = port_range_start
         for port_tag in port_tags:
             while current_port in used_ports:
                 current_port += 1
@@ -219,18 +235,25 @@ def validate_field(template_name, field_name, value):
     return True
 
 def process_rewrite(path, values):
+    """
+    values dict -- may have numbers (e.g. port) as vals
+    """
     with fileinput.input(files=(path), inplace=True) as f:
         for line in f:
-            for str(field_name), str(value) in values.items():
-                line = line.replace(
-                    basil_tag_start + field_name + basil_tag_end, value)
-            print(line, end='')
+            for field_name, value in values.items():
+                orig = basil_tag_start + field_name + basil_tag_end
+                line = line.replace(orig, str(value))
+            print(line, end="")
 
 def process_rename(path, values):
+    """
+    values dict -- may have numbers (e.g. port) as vals
+    """
     directory, name = os.path.split(path)
     orig_name = name
-    for str(field_name), str(value) in values.items():
-        name = name.replace(basil_tag_start + field_name + basil_tag_end, value)
+    for field_name, value in values.items():
+        orig = basil_tag_start + field_name + basil_tag_end
+        name = name.replace(orig, str(value))
     if name != orig_name:
         os.rename(join(directory, orig_name), join(directory, name))
 
@@ -242,9 +265,17 @@ def populate_templates(project_directory, values):
     # in order to rename effectively.
     for root, dirs, files in os.walk(project_directory, topdown=False):
         for path in [ join(root, name) for name in files ]:
-            process_rewrite(path, values)
+            try:
+                process_rewrite(path, values)
+            except Exception as e:
+                raise Exception("Problem rewriting \"{}\" with values: {}"
+                    .format(path, values))
         for path in  [ join(root, name) for name in files + dirs ]:
-            process_rename(path, values)
+            try:
+                process_rename(path, values)
+            except Exception as e:
+                raise Exception("Problem renaming \"{}\" with values: {}"
+                    .format(path, values))
 
 def create_project_config(template_name, values, ports, project_directory):
     """
@@ -347,16 +378,19 @@ def get_project_statuses():
     project_infos = get_projects()
     project_statuses = []
     for project_info in project_infos:
-        project_statuses.append(get_project_status(project_info.project_name,
-            project_info.template_name, project_info.template_version))
+        project_statuses.append(get_project_status(
+            project_info.project_name,
+            project_info.template_name,
+            project_info.template_version))
     return project_statuses
 
-def get_project_status_via_std_vagrant(project_name, project_directory,
-        template_name, template_version):
+def get_project_status_via_vagrant(project_name, template_name,
+        template_version):
     """
     http://docs.vagrantup.com/v2/cli/machine-readable.html
     Note - API not stabilised yet
     """
+    project_directory = join(projects_dir, project_name)
     output = str(subprocess.check_output(["vagrant", "status",
         "--machine-readable"], cwd=project_directory), "utf-8")
     status_dict = {}
@@ -372,12 +406,16 @@ def get_project_status_via_std_vagrant(project_name, project_directory,
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_SHORT] = data
         elif msg_type == keys.VAGRANT_STATUS_STATE_HUMAN_LONG:
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG] = data
+    project_config = project_load_config(project_name)
+    webserver_port = project_config[keys.PROJECT_PORTS].get(
+        keys.TEMPLATE_CONFIG_WEBSERVER, 8888)
     try:
         project_status = ProjectStatus(project_name, template_name,
             template_version,
             status_dict[keys.VAGRANT_STATUS_STATE],
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_SHORT],
-            status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG])
+            status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG],
+            webserver_port)
     except KeyError as e:
         raise Exception("Unable to get project status for \"{}\"."
             "\nOriginal error: {}".format(project_directory, e))
@@ -393,10 +431,9 @@ def get_project_status(project_name, template_name, template_version):
         project_status_func = (template_lib.__dict__
             .get(keys.PROJECT_STATUS_FUNCNAME))
     if not project_status_func:
-        project_status_func = get_project_status_via_std_vagrant
-    project_directory = join(projects_dir, project_name)
-    return project_status_func(project_name, project_directory,
-        template_name, template_version)
+        project_status_func = get_project_status_via_vagrant
+    return project_status_func(project_name, template_name,
+        template_version)
 
 def get_port_forwarded_collision_msg(cmd, error):
     forwarded_collision_result_pattern = (r"The forwarded port to (\d{4,5}) "

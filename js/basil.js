@@ -78,6 +78,10 @@ jQuery(document).ready(function($){
 
     function project_action(project_directory, project_name, url,
             action_lbl_do, action_lbl_doing, success_handler, fail_handler){
+        /*
+        The success and fail handlers may themselves be AJAX so we had best 
+        leave switching the hourglass off to them in all cases.
+        */
         $("body").css("cursor", "progress");
         $.ajax({type: "POST",
                 url: url,
@@ -86,10 +90,7 @@ jQuery(document).ready(function($){
                 }
             })
             .done(function(response){
-                /*console.log("AJAX call to " + url
-                    + " succeeded. project_directory was " + project_directory)*/
                 success_handler();
-                $("body").css("cursor", "default");
             })
             .fail(function(jqXHR, error, ex){
                 fail_handler();
@@ -97,7 +98,6 @@ jQuery(document).ready(function($){
                     + "\"";
                 var msg = "Unable to " + action_lbl_do + " \"" + project_name
                     + "\" project.<br><br>" + ex;
-                $("body").css("cursor", "default");
                 ok_dialog(title, msg);
             });
     };
@@ -172,18 +172,15 @@ jQuery(document).ready(function($){
     };
 
     function enable_all_btns(){
+        /* As a common success/fail handler good to guarantee hourglass off */
         $("input[type=button]").removeAttr("disabled");
+        $("body").css("cursor", "default");
     };
 
     function display_project_statuses(response){
         $("#loading-projects").remove();
         $("#project-statuses > table").remove();
         var projs = $("#project-statuses");
-	// @TODO: Handle the "No projects" case better.
-	if (typeof response == "string") {
-	    projs.append(response);
-	    return;
-	}
         projs.append(make_el("table", [], function(table){
             $(table).append(make_el("thead", [], function(thead){
                  $(thead).append(make_el("tr", [], function(tr){
@@ -251,6 +248,13 @@ jQuery(document).ready(function($){
                                         $(btn).attr("name", "btn_" + id);
                                         $(btn).attr("type", "button");
                                         $(btn).attr("value", "View");
+                                        var view_url = "'http://localhost:" 
+                                            + status["webserver_port"] + "'";
+                                        var view_cmd = "window.open(" + view_url + ")";
+                                        $(btn).attr("onClick", view_cmd);
+                                        $(btn).attr("title", "Open \"" 
+                                            + status["project_name"] + "\" (on " 
+                                            + view_url + ")");
                                     }));
                                     $(td).append(make_el("input", [], function(btn){
                                         $(btn).attr("id", "btn_" + ++id);
@@ -293,13 +297,15 @@ jQuery(document).ready(function($){
         /*
         Can't accept arguments - otherwise messes up setInterval.
         */
+        $("body").css("cursor", "progress");
         $.ajax({type: "GET", url: "get-statuses"})
             .done(function(response){
-                // if no response, Chromium produces unhelpful error about syntax (see http://stackoverflow.com/a/23939381)
                 if(response != ""){
                     display_project_statuses(response);
+                    $("body").css("cursor", "default");
                 } else {
-                    alert("Got unexpected empty response - please refresh");
+                    $("#loading-projects").text("You don't have any projects yet.");
+                    $("body").css("cursor", "default");
                 };
             })
             .fail(function(jqXHR, error, ex){

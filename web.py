@@ -128,7 +128,7 @@ class Page(Request):
             {head}
           </head>
           <body>
-            <a href="\" title="Home page">
+            <a href="/" title="Home page">
                 <image id="basil-logo" src="images/basil_logo.png">
             </a>
             {body}
@@ -170,9 +170,10 @@ class GetStatuses(Request):
                     "project_state_msg": status2friendly.get(
                         project_status.state, project_status.state_human_long)
                         .format(project_status.project_name),
+                    "webserver_port": project_status.webserver_port,
                 })
         else:
-            project_feedback = "You currently don't have any projects."
+            project_feedback = ""
         payload = json.dumps(project_feedback).encode("utf-8")
         self.handler.wfile.write(payload)
 
@@ -276,6 +277,14 @@ class CreateProject(Page):
     def body(self):
         postvars = self.get_postvars()
         template_name = postvars[keys.TEMPLATE][0]
+        if template_name != "basil_django":
+            return """
+        <h1>Coming soon - not implemented yet</h1>
+        <p class="instructions">
+        Support for <span class="project-name">{}</span> template coming soon. Sorry! 
+        <a href="/" title="Back to home page">Back</a>
+        </p>
+        """.format(template_name)
         project_name = postvars[keys.PROJECT_NAME][0]
         project_directory = join(projects_dir, project_name)
         values = {key: val[0] for key, val in postvars.items()
@@ -296,15 +305,19 @@ class CreateProject(Page):
             return ("\"{}\" project successfully created and started but was "
                 "unable to view it.<br>Original error: {}".format(project_name,
                 e))
+        # assumes the port we want has been tagged "webserver" - @Later make a proper requirement
+        project_config = core.project_load_config(project_name)
+        port2open = project_config[keys.PROJECT_PORTS].get(
+            keys.TEMPLATE_CONFIG_WEBSERVER, 8888)
         return """
             <h1>Success!</h1>
 
             <p class="instructions">Your "{project_name}" project was
             successfully built.</p>
 
-            <p>Click <a target='_blank' href='http://localhost:8888/'>
+            <p>Click <a target='_blank' href='http://localhost:{port2open}/'>
             open {project_name}</a> and see feedback from your project.</p>
-            """.format(project_name=project_name)
+            """.format(project_name=project_name, port2open=port2open)
 
 
 class GetValues(Page):

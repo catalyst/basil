@@ -67,6 +67,9 @@ th#actions-col {
 .project-template {
     font-size: 9px;
 }
+#project-statuses {
+    margin-bottom: 400px; /* so cursor over body shows hourglass even if mouse lower down in screen */
+}
 #settings-form {
     width: 400px;
 }
