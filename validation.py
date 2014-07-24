@@ -17,12 +17,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import re
+
 def validate_directory(value):
     """
     Returns True if value is a valid name for a directory.
     """
-
-    #print("Value validated in validate_directory is {}".format(value))
-
-    return True
-
+    return bool(re.search(r'^[A-z][A-z0-9_]+$', value))

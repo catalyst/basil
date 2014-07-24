@@ -36,7 +36,7 @@ project.
 
 from collections import namedtuple
 import fileinput
-import importlib
+import importlib.machinery
 import json
 import os
 from os.path import join
@@ -144,15 +144,15 @@ def get_fields(template_name):
     from templates.
     """
     config = template_load_config(template_name)
-    fields = list(default_fields)
+    fields = { field.name: field for field in default_fields }
     for field_name, field in config[keys.TEMPLATE_CONFIG_FIELDS].items():
-        fields.append(Field(field_name,
+        fields[field_name] = (Field(field_name,
             field[keys.TEMPLATE_FIELD_TYPE],
             field[keys.TEMPLATE_FIELD_TITLE],
             field[keys.TEMPLATE_FIELD_DESCRIPTION],
             field[keys.TEMPLATE_FIELD_DEFAULT],
             field[keys.TEMPLATE_FIELD_VALIDATORS]))
-    return fields
+    return list(fields.values())
 
 def get_default_field_validators(field_name):
     """
@@ -168,7 +168,7 @@ def get_ports(template_name):
     places e.g. a webserver port. E.g.
 
     Inside project:
-    
+
        config_somewhere: .... webserver_port
        other_config: ... ssh_port
        other_config: ... webserver_port
@@ -211,15 +211,15 @@ def validate_field(template_name, field_name, value):
     template's lib.py, then in basil's validators.py.
     """
     config = template_load_config(template_name)
-    try:
-        validators = get_default_field_validators(field_name)
-    except Exception:
+    if field_name in config[keys.TEMPLATE_CONFIG_FIELDS]:
         try:
             validators = (config[keys.TEMPLATE_CONFIG_FIELDS][field_name]
                 [keys.TEMPLATE_FIELD_VALIDATORS])
         except KeyError:
             raise Exception("Unable to locate validator details for \"{}\""
                 .format(field_name))
+    else:
+        validators = get_default_field_validators(field_name)
     template_lib = template_load_lib(template_name)
     for validator_name in ['validate_' + validator for validator in validators]:
         if template_lib:
@@ -232,6 +232,9 @@ def validate_field(template_name, field_name, value):
         if validate_func:
             if not validate_func(value):
                 return False
+        else:
+            raise Exception('Validation function not found: {}'.format(
+                validator_name))
     return True
 
 def process_rewrite(path, values):
