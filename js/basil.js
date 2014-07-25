@@ -177,6 +177,32 @@ jQuery(document).ready(function($){
         $("body").css("cursor", "default");
     };
 
+    function show_code(project_directory){
+        $.ajax({type: "POST",
+                url: "open-code",
+                data: {
+                    "project_directory": project_directory
+                }
+            })
+            .fail(function(jqXHR, error, ex){
+                alert(ex);
+            });
+    };
+
+    function add_std_button(td, id, classes, value, action_func, status){
+        $(td).append(make_el("input", classes, function(btn){
+            $(btn).attr("id", "btn_" + id);
+            $(btn).attr("name", "btn_" + id);
+            $(btn).attr("type", "button");
+            $(btn).attr("value", value);
+            $(btn).click(function(){
+                disable_all_btns();
+                action_func(status["project_directory"],
+                    status["project_name"]);
+            });
+        }));
+    };
+
     function display_project_statuses(response){
         $("#loading-projects").text("");
         $("#project-statuses > table").remove();
@@ -186,14 +212,12 @@ jQuery(document).ready(function($){
                  $(thead).append(make_el("tr", [], function(tr){
                     $(tr).append(make_el("th", [], function(th){
                         $(th).text("Project");
-                        $(th).attr("id", "projs-col");
                     }));
                     $(tr).append(make_el("th", [], function(th){
                         $(th).text("Status");
                     }));
                     $(tr).append(make_el("th", [], function(th){
                         $(th).text("Actions");
-                        $(th).attr("id", "actions-col");
                     }));
                 }));
             }));
@@ -201,48 +225,32 @@ jQuery(document).ready(function($){
                  var id = 0;
                  _.each(response, function(status){
                     $(tbody).append(make_el("tr", [], function(tr){
-                        $(tr).append(make_el("td", [], function(td){
-                             $(td).html("<span class='project-name'>"
-                                 + status["project_name"]
-                                 + "</span><br><span class='project-template'>"
-                                 + "(from " + status["template_name"] + " "
-                                 + status["template_version"] + ")</span>");
+                        $(tr).append(make_el("td", ["projs-col"], function(td){
+                            $(td).html("<span class='project-name'>"
+                                + status["project_name"]
+                                + "</span><br><span class='project-template'>"
+                                + "(from " + status["template_name"] + " "
+                                + status["template_version"] + ")</span>");
                         }));
-                        $(tr).append(make_el("td", [], function(td){
-                             $(td).html("<strong>" + status["project_state"]
-                                 + "</strong> - " + status["project_state_msg"]);
+                        $(tr).append(make_el("td", ["status-col"], function(td){
+                            $(td).html("<strong>" + status["project_state"]
+                                + "</strong> - " + status["project_state_msg"]);
                         }));
-                        $(tr).append(make_el("td", [], function(td){
+                        $(tr).append(make_el("td", ["actions-col"], function(td){
                             switch(status["project_state"]){
                                 case "Not Created":
                                 case "Aborted":
                                 case "Poweroff":
                                     // Start, Destroy
-                                    $(td).append(make_el("input", [], function(btn){
-                                        $(btn).attr("id", "btn_" + ++id);
-                                        $(btn).attr("name", "btn_" + id);
-                                        $(btn).attr("type", "button");
-                                        $(btn).attr("value", "Start");
-                                        $(btn).click(function(){
-                                            disable_all_btns();
-                                            project_start(status["project_directory"],
-                                                status["project_name"]);
-                                        });
-                                    }));
-                                    $(td).append(make_el("input", ["float-right"], function(btn){
-                                        $(btn).attr("id", "btn_" + ++id);
-                                        $(btn).attr("name", "btn_" + id);
-                                        $(btn).attr("type", "button");
-                                        $(btn).attr("value", "Destroy");
-                                        $(btn).click(function(){
-                                            disable_all_btns();
-                                            project_destroy(status["project_directory"],
-                                                status["project_name"]);
-                                        });
-                                    }));
+                                    id++;
+                                    add_std_button(td, id, [], "Start", 
+                                        project_start, status);
+                                    id++;
+                                    add_std_button(td, id, ["float-right"], 
+                                        "Destroy", project_destroy, status);
                                     break;
                                 case "Running":
-                                    // View, Command, Stop, Destroy
+                                    // View, Code, Command, Stop, Destroy
                                     $(td).append(make_el("input", [], function(btn){
                                         $(btn).attr("id", "btn_" + ++id);
                                         $(btn).attr("name", "btn_" + id);
@@ -260,30 +268,23 @@ jQuery(document).ready(function($){
                                         $(btn).attr("id", "btn_" + ++id);
                                         $(btn).attr("name", "btn_" + id);
                                         $(btn).attr("type", "button");
-                                        $(btn).attr("value", "Run Command");
+                                        $(btn).attr("value", "Code");
+                                        $(btn).click(function(){
+                                            show_code(status["project_directory"]);
+                                        });
                                     }));
                                     $(td).append(make_el("input", [], function(btn){
                                         $(btn).attr("id", "btn_" + ++id);
                                         $(btn).attr("name", "btn_" + id);
                                         $(btn).attr("type", "button");
-                                        $(btn).attr("value", "Stop");
-                                        $(btn).click(function(){
-                                            disable_all_btns();
-                                            project_stop(status["project_directory"],
-                                                status["project_name"]);
-                                        });
+                                        $(btn).attr("value", "Run Command");
                                     }));
-                                    $(td).append(make_el("input", ["float-right"], function(btn){
-                                        $(btn).attr("id", "btn_" + ++id);
-                                        $(btn).attr("name", "btn_" + id);
-                                        $(btn).attr("type", "button");
-                                        $(btn).attr("value", "Destroy");
-                                        $(btn).click(function(){
-                                            disable_all_btns();
-                                            project_destroy(status["project_directory"],
-                                                status["project_name"]);
-                                        });
-                                    }));
+                                    id++;
+                                    add_std_button(td, id, [], "Stop", project_stop, 
+                                        status);
+                                    id++;
+                                    add_std_button(td, id, ["float-right"], 
+                                        "Destroy", project_destroy, status);
                                     break;
                              };
                         }));

@@ -220,6 +220,13 @@ class ProjectDestroy(Action):
             args=[self.project_directory,])
 
 
+class OpenCode(Action):
+    
+    def execute(self):
+        super(OpenCode, self).execute(func=core.open_code,
+            args=[self.project_directory,])
+        
+
 class HomePage(Page):
 
     def title(self):
@@ -428,6 +435,7 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
             (r'project-start', {'POST': ProjectStart,}),
             (r'project-stop', {'POST': ProjectStop,}),
             (r'project-destroy', {'POST': ProjectDestroy,}),
+            (r'open-code', {'POST': OpenCode,}),
             (r'', {'GET': HomePage,}),
         ]
         super(BasilManagerHandler, self).__init__(

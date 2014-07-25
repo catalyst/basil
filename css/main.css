@@ -54,11 +54,30 @@ td {
     vertical-align: top;
     padding: 8px;
 }
-th#projs-col {
-    width: 100px;
-}
-th#actions-col {
+/* Template selection */
+#templates-form {
     width: 400px;
+}
+#templates-dropdown {
+    float: left;
+    width: 150px;
+}
+#template-description {
+    max-width: 600px;
+    clear: both;
+    font-size: 13px;
+    padding-top: 20px;
+}
+/* Existing projects */
+.projs-col {
+    min-width: 100px;
+    max-width: 200px;
+}
+.status-col {
+    max-width: 500px;
+}
+.actions-col {
+    width: 450px;
 }
 .project-name {
     font-style: italic;
@@ -70,6 +89,7 @@ th#actions-col {
 #project-statuses {
     margin-bottom: 400px; /* so cursor over body shows hourglass even if mouse lower down in screen */
 }
+/* Other */
 #settings-form {
     width: 400px;
 }
@@ -99,19 +119,6 @@ th#actions-col {
 .instructions {
     font-size: 15px;
     clear: both;
-}
-#templates-form {
-    width: 400px;
-}
-#templates-dropdown {
-    float: left;
-    width: 150px;
-}
-#template-description {
-    width: 60%;
-    clear: both;
-    font-size: 13px;
-    padding-top: 20px;
 }
 #apply-button {
     float: left;

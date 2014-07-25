@@ -43,6 +43,9 @@ from os.path import join
 import re
 import shutil
 import subprocess
+import sys
+import tkinter
+from tkinter import filedialog
 
 import keys
 import settings
@@ -69,6 +72,8 @@ default_fields = [
     Field('project_name', 'text', 'Project name', 'The name of this project',
         '', [ 'directory' ]),
 ]
+
+OpenCommand = namedtuple("OpenCommand", ("cmd_bits", "lbl"))
 
 basil_tag_start = '{{__basil__.'
 basil_tag_end = '}}'
@@ -506,11 +511,92 @@ def start_project(project_directory):
     run_vagrant_cmd(command_list=["vagrant", "up"],
         project_directory=project_directory)
 
-def view_project(project_directory):
+def open_code(project_directory):
     """
-    View output from project e.g. Home Page.
+    Open file browser in folder where the code is. Then open the file selected
+    using the default text editor for that file type (unless html, in which
+    case, use the first text editor you can get working).
+
+    See http://stackoverflow.com/questions/434597/open-document-with-default-application-in-python
     """
-    pass
+    try:
+        root = tkinter.Tk()
+        root.withdraw()
+        filepath = filedialog.askopenfilename(initialdir=project_directory)
+    except Exception as e:
+        raise Exception("Unable to identify a file in \"{}\""
+            .format(project_directory))
+    if not filepath: # don't bother them with a message
+        return
+    shell = False
+    is_html = filepath.endswith((".htm", ".html", ".xhtm", ".xhtml"))
+    if sys.platform.startswith("darwin"):
+        if is_html:
+            editor_cmds_to_try = [
+                OpenCommand(["open", "-a", "TextEdit"], "TextEdit"),
+            ] # anything needed other than TextEdit?
+        else:
+            editor_cmds_to_try = [
+                OpenCommand(["open"], "default"),
+            ]
+    elif os.name == "nt":
+        if is_html:
+            editor_cmds_to_try = [ # surely Windows users deserve a chance to use something decent
+                OpenCommand(["Notepad++"], "Notepad++"),
+                OpenCommand(["notepad"], "Notepad"),
+                OpenCommand(["wordpad"], "Wordpad"),
+            ]
+        else:
+            editor_cmds_to_try = [
+                OpenCommand(["start"], "default"),
+            ]
+            shell = True
+    elif os.name == "posix":
+        if is_html: # the order of these could be controversial ;-)
+            editor_cmds_to_try = [
+                OpenCommand(["gedit"], "gedit"),
+                OpenCommand(["vim"], "vim"),
+                OpenCommand(["emacs"], "emacs"),
+                OpenCommand(["nano"], "nano"),
+                OpenCommand(["pico"], "pico"),
+            ]
+        else:
+            editor_cmds_to_try = [
+                OpenCommand(["xdg-open"], "default"),
+            ]
+    last_error = None
+    editors_tried = []
+    for editor_cmd in editor_cmds_to_try:
+        editor_lbl = editor_cmd.lbl
+        editors_tried.append(editor_lbl)
+        cmd_bits = editor_cmd.cmd_bits
+        cmd_bits += [filepath,]
+        command = " ".join(cmd_bits)
+        try:
+            if shell:
+                retcode = subprocess.call(command, shell=True)
+            else:
+                retcode = subprocess.call(cmd_bits, shell=False)
+            if retcode < 0:
+                continue
+            else:
+                return # success!
+        except OSError as e:
+            last_error = e
+            continue
+    # Something went wrong if you are here :-). Report on the last problem.
+    # Only ever multiple if was trying to open html.
+    multiple_attempts = (len(editors_tried) > 1)
+    msg_bits = ["Unable to open code file \"{}\".".format(filepath)]
+    if multiple_attempts:
+        msg_bits.append("None of the following text editors worked: {}"
+            .format(", ".join(editors_tried)))
+    else:
+        msg_bits.append("Running the command \"{}\" failed to open the {} text "
+            "editor".format(command, editor_lbl))
+    if last_error:
+        msg_bits.append("Original error: {}".format(last_error))
+    raise Exception("\n".join(msg_bits))
 
 def stop_project(project_directory):
     """
