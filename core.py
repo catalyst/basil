@@ -75,10 +75,26 @@ default_fields = [
 
 OpenCommand = namedtuple("OpenCommand", ("cmd_bits", "lbl"))
 
-basil_tag_start = '{{__basil__.'
-basil_tag_end = '}}'
+basil_tag_start = "{{__basil__."
+basil_tag_end = "}}"
+basil_bash_start = "#basil_bash_start #####" # using # instead of, for eg, * otherwise regex treats as multiple repeats ;-)
+basil_bash_end = "#basil_bash_end #####"
 
 port_range_start = 45600
+
+my_platform = "my_platform"
+LINUX = "Linux"
+WINDOWS = "Windows"
+MAC = "Mac OSX"
+UNKNOWN_PLATFORM = "Unknown platform"
+if sys.platform.startswith("darwin"):
+    my_platform = MAC
+elif os.name == "nt":
+    my_platform = WINDOWS
+elif os.name == "posix":
+    my_platform = LINUX
+else:
+    my_platform = UNKNOWN_PLATFORM
 
 def template_load_lib(template_name):
     try:
@@ -530,7 +546,7 @@ def open_code(project_directory):
         return
     shell = False
     is_html = filepath.endswith((".htm", ".html", ".xhtm", ".xhtml"))
-    if sys.platform.startswith("darwin"):
+    if my_platform == MAC:
         if is_html:
             editor_cmds_to_try = [
                 OpenCommand(["open", "-a", "TextEdit"], "TextEdit"),
@@ -539,7 +555,7 @@ def open_code(project_directory):
             editor_cmds_to_try = [
                 OpenCommand(["open"], "default"),
             ]
-    elif os.name == "nt":
+    elif my_platform == WINDOWS:
         if is_html:
             editor_cmds_to_try = [ # surely Windows users deserve a chance to use something decent
                 OpenCommand(["Notepad++"], "Notepad++"),
@@ -551,7 +567,7 @@ def open_code(project_directory):
                 OpenCommand(["start"], "default"),
             ]
             shell = True
-    elif os.name == "posix":
+    elif my_platform == LINUX:
         if is_html: # the order of these could be controversial ;-)
             editor_cmds_to_try = [
                 OpenCommand(["gedit"], "gedit"),
@@ -597,6 +613,29 @@ def open_code(project_directory):
     if last_error:
         msg_bits.append("Original error: {}".format(last_error))
     raise Exception("\n".join(msg_bits))
+
+def open_shell(project_directory):
+    """
+    Open a terminal with the ssh command already run.
+
+    Works very nicely in Linux using bash.
+    See http://stackoverflow.com/questions/3512055/avoid-gnome-terminal-close-after-script-execution
+
+    Not added Windows implementation yet. Not checked Mac implementation
+    although probably Linux approach will work.
+    """
+    if my_platform in (LINUX, MAC):
+        rcfile_path = join(project_directory, "rcfile")
+        with open(rcfile_path, "w") as f:
+            cmd = """cd "{}" && vagrant ssh""".format(project_directory)
+            f.write("{}\n{}\n{}".format(basil_bash_start, cmd, basil_bash_end))
+            f.close()
+        subprocess.check_output(["gnome-terminal", "-e", "bash --rcfile \"{}\""
+            .format(rcfile_path)])
+    elif my_platform == WINDOWS:
+        raise Exception("Open SSH not implemented yet for Windows")
+    else:
+        raise Exception("Unexpected platform when trying to open ssh")
 
 def stop_project(project_directory):
     """

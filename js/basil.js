@@ -177,9 +177,21 @@ jQuery(document).ready(function($){
         $("body").css("cursor", "default");
     };
 
-    function show_code(project_directory){
+    function open_code(project_directory){
         $.ajax({type: "POST",
                 url: "open-code",
+                data: {
+                    "project_directory": project_directory
+                }
+            })
+            .fail(function(jqXHR, error, ex){
+                alert(ex);
+            });
+    };
+
+    function open_shell(project_directory){
+        $.ajax({type: "POST",
+                url: "open-shell",
                 data: {
                     "project_directory": project_directory
                 }
@@ -270,7 +282,7 @@ jQuery(document).ready(function($){
                                         $(btn).attr("type", "button");
                                         $(btn).attr("value", "Code");
                                         $(btn).click(function(){
-                                            show_code(status["project_directory"]);
+                                            open_code(status["project_directory"]);
                                         });
                                     }));
                                     $(td).append(make_el("input", [], function(btn){
@@ -278,6 +290,9 @@ jQuery(document).ready(function($){
                                         $(btn).attr("name", "btn_" + id);
                                         $(btn).attr("type", "button");
                                         $(btn).attr("value", "Run Command");
+                                        $(btn).click(function(){
+                                            open_shell(status["project_directory"]);
+                                        });
                                     }));
                                     id++;
                                     add_std_button(td, id, [], "Stop", project_stop, 

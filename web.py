@@ -225,6 +225,13 @@ class OpenCode(Action):
     def execute(self):
         super(OpenCode, self).execute(func=core.open_code,
             args=[self.project_directory,])
+
+
+class OpenShell(Action):
+    
+    def execute(self):
+        super(OpenShell, self).execute(func=core.open_shell,
+            args=[self.project_directory,])
         
 
 class HomePage(Page):
@@ -436,6 +443,7 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
             (r'project-stop', {'POST': ProjectStop,}),
             (r'project-destroy', {'POST': ProjectDestroy,}),
             (r'open-code', {'POST': OpenCode,}),
+            (r'open-shell', {'POST': OpenShell,}),
             (r'', {'GET': HomePage,}),
         ]
         super(BasilManagerHandler, self).__init__(
