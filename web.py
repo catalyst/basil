@@ -221,18 +221,18 @@ class ProjectDestroy(Action):
 
 
 class OpenCode(Action):
-    
+
     def execute(self):
         super(OpenCode, self).execute(func=core.open_code,
             args=[self.project_directory,])
 
 
 class OpenShell(Action):
-    
+
     def execute(self):
         super(OpenShell, self).execute(func=core.open_shell,
             args=[self.project_directory,])
-        
+
 
 class HomePage(Page):
 
@@ -291,14 +291,6 @@ class CreateProject(Page):
     def body(self):
         postvars = self.get_postvars()
         template_name = postvars[keys.TEMPLATE][0]
-        if template_name != "basil_django":
-            return """
-        <h1>Coming soon - not implemented yet</h1>
-        <p class="instructions">
-        Support for <span class="project-name">{}</span> template coming soon. Sorry! 
-        <a href="/" title="Back to home page">Back</a>
-        </p>
-        """.format(template_name)
         project_name = postvars[keys.PROJECT_NAME][0]
         project_directory = join(projects_dir, project_name)
         values = {key: val[0] for key, val in postvars.items()
