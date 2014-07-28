@@ -314,7 +314,7 @@ class CreateProject(Page):
             return ("\"{}\" project successfully created but was unable to "
                 "start it.<br>Original error: {}".format(project_name, e))
         try:
-            core.view_project(project_directory)
+            core.view_project(project_name)
         except Exception as e:
             return ("\"{}\" project successfully created and started but was "
                 "unable to view it.<br>Original error: {}".format(project_name,
@@ -329,8 +329,9 @@ class CreateProject(Page):
             <p class="instructions">Your "{project_name}" project was
             successfully built.</p>
 
-            <p>Click <a target='_blank' href='http://localhost:{port2open}/'>
-            open {project_name}</a> and see feedback from your project.</p>
+            <p>If it hasn't already opened in another tab, click
+            <a target='_blank' href='http://localhost:{port2open}/'>
+            open {project_name}</a> to see feedback from your project.</p>
             """.format(project_name=project_name, port2open=port2open)
 
 

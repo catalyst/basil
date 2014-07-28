@@ -46,6 +46,7 @@ import subprocess
 import sys
 import tkinter
 from tkinter import filedialog
+import webbrowser
 
 import keys
 import settings
@@ -526,6 +527,12 @@ def start_project(project_directory):
     """
     run_vagrant_cmd(command_list=["vagrant", "up"],
         project_directory=project_directory)
+
+def view_project(project_name):
+    project_config = project_load_config(project_name)
+    webserver_port = project_config[keys.PROJECT_PORTS].get(
+        keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)
+    webbrowser.open_new_tab("http://localhost:{}".format(webserver_port))
 
 def open_code(project_directory):
     """
