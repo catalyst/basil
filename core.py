@@ -36,6 +36,7 @@ project.
 
 from collections import namedtuple
 import fileinput
+from functools import partial
 import importlib.machinery
 import json
 import os
@@ -44,6 +45,7 @@ import re
 import shutil
 import subprocess
 import sys
+from threading import Thread
 import tkinter
 from tkinter import filedialog
 import webbrowser
@@ -478,7 +480,8 @@ def get_port_forwarded_collision_msg(cmd, error):
         msg = None
     return msg
 
-def run_vagrant_cmd(command_list, project_directory):
+def execute_blocking_vagrant_cmd(command_list, project_directory,
+        command_progress,callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
 
@@ -495,12 +498,12 @@ def run_vagrant_cmd(command_list, project_directory):
     raw error to form a basic error message.
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
         if p.poll() == None:
-            while True:    
+            while True:
                 msg = str(p.stdout.readline(), "utf-8").strip()
-                print(msg) # feed back somehow
+                command_progress['output'] += msg + '\n'
                 if not msg:
                     break
             error = str(p.stderr.readline(), "utf-8").strip()
@@ -518,14 +521,31 @@ def run_vagrant_cmd(command_list, project_directory):
                 raise Exception(msg.replace("\n", "<br><br>"))
         else:
             break
-    return
+    command_progress['finished'] = True
+    if callback:
+        callback()
+
+def run_vagrant_cmd(command_list, project_directory, callback=None):
+    """
+    command_list -- must be a list ready for subprocess to use.
+    """
+    command_progress = dict(
+        finished = False,
+        progress = 0,
+        message = 'In progress',
+        output = '',
+    )
+    t = Thread(target=execute_blocking_vagrant_cmd, args=(command_list,
+        project_directory, command_progress, callback))
+    t.start()
+    return command_progress
 
 # @TODO: Should we be passing the project_name instead?
 def start_project(project_directory):
     """
     Open project - vagrant up.
     """
-    run_vagrant_cmd(command_list=["vagrant", "up"],
+    return run_vagrant_cmd(command_list=["vagrant", "up"],
         project_directory=project_directory)
 
 def open_code(project_directory):
@@ -642,7 +662,7 @@ def stop_project(project_directory):
     """
     Stop project - vagrant halt.
     """
-    run_vagrant_cmd(command_list=["vagrant", "halt"],
+    return run_vagrant_cmd(command_list=["vagrant", "halt"],
         project_directory=project_directory)
 
 def destroy_project(project_directory):
@@ -651,7 +671,7 @@ def destroy_project(project_directory):
     already checked with the user that this is what they really want to do.
     Too late if you get to here ;-).
     """
-    run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
-        project_directory=project_directory)
-    shutil.rmtree(project_directory)
-
+    callback = partial(shutil.rmtree, project_directory)
+    command_progress = run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
+        project_directory=project_directory, callback=callback)
+    return command_progress

@@ -58,6 +58,9 @@ status2friendly = {
         Home Page). Don't forget to Close it before turning off your machine.
         """}
 
+# @TODO: This should be a list/dict of command_progress.
+command_progress = None
+
 def get_postvars(handler):
     """
     Returns dict of post variables. The vals are lists (usually of just
@@ -177,6 +180,20 @@ class GetStatuses(Request):
         payload = json.dumps(project_feedback).encode("utf-8")
         self.handler.wfile.write(payload)
 
+class GetCommandProgress(Request):
+
+    def __init__(self, handler):
+        super(GetCommandProgress, self).__init__(handler)
+        self.headers['Content-type'] = 'application/json'
+        self.headers['Accept'] = 'text/plain'
+
+    def execute(self):
+        super(GetCommandProgress, self).execute()
+        try:
+            payload = json.dumps(command_progress)
+        except Exception as ex:
+            payload = ''
+        self.handler.wfile.write(payload.encode("utf-8"))
 
 class Action(Request):
 
@@ -190,8 +207,9 @@ class Action(Request):
                 "Original error: {}".format(e))
 
     def execute(self, func, args):
+        global command_progress
         try:
-            func(*args)
+            command_progress = func(*args)
         except Exception as e:
             self.response = 500
             self.response_msg = e
@@ -289,6 +307,7 @@ class CreateProject(Page):
         return 'Project being built ...'
 
     def body(self):
+        global command_progress
         postvars = self.get_postvars()
         template_name = postvars[keys.TEMPLATE][0]
         project_name = postvars[keys.PROJECT_NAME][0]
@@ -301,7 +320,7 @@ class CreateProject(Page):
             return ("Was unable to create \"{}\" project.<br>"
                 "Original error: {}".format(project_name, e))
         try:
-            core.start_project(project_directory)
+            command_progress = core.start_project(project_directory)
         except Exception as e:
             return ("\"{}\" project successfully created but was unable to "
                 "start it.<br>Original error: {}".format(project_name, e))
@@ -423,6 +442,7 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
         self.urls = [
             (r'images/|css/|js/', {'GET': Asset,}),
             (r'create-project', {'POST': CreateProject,}),
+            (r'get-command-progress', {'GET': GetCommandProgress,}),
             (r'get-values', {'POST': GetValues,}),
             (r'get-statuses', {'GET': GetStatuses,}),
             (r'project-start', {'POST': ProjectStart,}),
