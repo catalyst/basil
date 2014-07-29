@@ -506,7 +506,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 command_progress['output'] += msg + '\n'
                 if not msg:
                     break
-            error = str(p.stderr.readline(), "utf-8").strip()
+            error = str(p.stderr.read(), "utf-8").strip()
             if error:
                 cmd = " ".join(command_list)
                 msg = None
