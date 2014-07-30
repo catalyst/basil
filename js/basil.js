@@ -93,18 +93,10 @@ function project_action(project_directory, project_name, url,
 function project_start(project_directory, project_name){
     project_action(project_directory, project_name,
         "project-start", "start", "starting");
-    $("#progress").append(make_el("p", [], function(p){
-        $(p).attr("id", "progress-heading");
-        $(p).text("Progress details ...");
-    }));
-    $("#progress").append(make_el("div", [], function(div){
-        $(div).attr("id", "progress-bar");
-        $(div).progressbar({value: 0});
-    }));
-    $("#progress").append(make_el("div", [], function(div){
-        $(div).attr("id", "progress-details");
-        $(div).html("Waiting for progress details ...");
-    }));
+    $("#progress").html("<p id='progress-heading'>Progress details ...</p>" 
+        + "<div id='progress-bar'></div>" 
+        + "<div id='progress-details'>Waiting for progress details ...</div>");
+    $("#progress-bar").progressbar({value: 0});
     // poll recursively (relax - the server puts the pause in ;-) )
     var get_progress = function(){
         $.ajax({type: "GET",
@@ -112,7 +104,7 @@ function project_start(project_directory, project_name){
                 url: "get-command-progress"
             })
             .done(function(response){
-                console.log(response);
+                //console.log(response);
                 if (response != ""){
                     if(response.finished){ // handle cleanup e.g. remove progress bar
                         $("#progress-heading").text("Finished");
