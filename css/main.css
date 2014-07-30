@@ -54,11 +54,6 @@ td {
     vertical-align: top;
     padding: 8px;
 }
-
-
-
-
-
 /* Progress */
 #progress {
     max-width: 600px;
@@ -72,22 +67,13 @@ td {
     margin-bottom: 10px;
 }
 #progress-details {
-    max-height: 150px;
-    /*height: 150px; /* Chromium*/
+    max-height: 100px;
     color: white;
     background-color: black;
     padding: 6px;
     margin-bottom: 10px;
     overflow-y: scroll;
 }
-#details-end {
-    height: 0;
-}
-
-
-
-
-
 /* Template selection */
 #templates-form {
     width: 400px;

@@ -29,7 +29,6 @@ import os
 from os.path import join
 import re
 import sys
-import time
 import urllib
 
 import core
@@ -191,7 +190,6 @@ class GetCommandProgress(Request):
 
     def execute(self):
         super(GetCommandProgress, self).execute()
-        time.sleep(0.5) # easiest to put pause at server end
         try:
             payload = json.dumps(command_progress)
         except Exception as ex:

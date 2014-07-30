@@ -97,7 +97,10 @@ function project_start(project_directory, project_name){
         + "<div id='progress-bar'></div>" 
         + "<div id='progress-details'>Waiting for progress details ...</div>");
     $("#progress-bar").progressbar({value: 0});
-    // poll recursively (relax - the server puts the pause in ;-) )
+    /* poll recursively with pauses at client end. Warning - alternative approach 
+    of instant recursion at client prevented Chromium from updating the DOM till 
+    function returned (even though server added pauses).*/
+    var prev_response_str = "";
     var get_progress = function(){
         $.ajax({type: "GET",
                 async: false,
@@ -105,6 +108,7 @@ function project_start(project_directory, project_name){
             })
             .done(function(response){
                 //console.log(response);
+                var response_str = JSON.stringify(response);
                 if (response != ""){
                     if(response.finished){ // handle cleanup e.g. remove progress bar
                         $("#progress-heading").text("Finished");
@@ -112,18 +116,23 @@ function project_start(project_directory, project_name){
                         setTimeout(cleanup_progress, 2000);
                         get_project_statuses();
                         enable_all_btns();
-                    } else { //display progress e.g. messages
-                        var n_expected_msgs = 20;
-                        var percent = (response.progress*100)/n_expected_msgs;
-                        $("#progress-heading").text(response.message);
-                        $("#progress-bar").progressbar({value: percent});
-                        if(response.output != ""){
-                            $("#progress-details").html(
-                                response.output.replace(/(\r\n|\n|\r)/gm, "<br>")) 
-                                    + "<span id='details-end'></span>";
+                    } else { //display progress e.g. messages (if change)
+                        var changed = (prev_response_str != response_str);
+                        if(changed){ // hammer the html refreshing less
+                            //console.log("Changed");
+                            prev_response_str = response_str;
+                            var n_expected_msgs = 20;
+                            var percent = (response.progress*100)/n_expected_msgs;
+                            $("#progress-heading").text(response.message);
+                            $("#progress-bar").progressbar({value: percent});
+                            if(response.output != ""){
+                                $("#progress-details").html(
+                                    response.output.replace(/(\r\n|\n|\r)/gm, "<br>")
+                                );
+                                $("#progress-details").scrollTop(100000000000000000);
                             };
-                            $("#details-end").focus();
-                        get_progress();
+                        };
+                        setTimeout(get_progress, 500);
                     };
                 }
             })
