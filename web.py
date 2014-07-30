@@ -29,6 +29,7 @@ import os
 from os.path import join
 import re
 import sys
+import time
 import urllib
 
 import core
@@ -180,6 +181,7 @@ class GetStatuses(Request):
         payload = json.dumps(project_feedback).encode("utf-8")
         self.handler.wfile.write(payload)
 
+
 class GetCommandProgress(Request):
 
     def __init__(self, handler):
@@ -189,16 +191,20 @@ class GetCommandProgress(Request):
 
     def execute(self):
         super(GetCommandProgress, self).execute()
+        time.sleep(0.5) # easiest to put pause at server end
         try:
             payload = json.dumps(command_progress)
         except Exception as ex:
-            payload = ''
+            print("Problem getting payload")
+            payload = ""
         self.handler.wfile.write(payload.encode("utf-8"))
+
 
 class Action(Request):
 
     def __init__(self, handler):
         super(Action, self).__init__(handler)
+        self.headers['Content-type'] = 'text/json' # otherwise will try to parse as XML and raise error ;-)
         try:
             postvars = get_postvars(self.handler)
             self.project_directory = postvars[keys.PROJECT_DIRECTORY][0]
@@ -209,12 +215,15 @@ class Action(Request):
     def execute(self, func, args):
         global command_progress
         try:
-            command_progress = func(*args)
+            command_progress = func(*args) # command_progress is a mutable that is probably yet to be updated (if actual task passed to a thread)
+            reply_payload = {"Action state": "submitted successfully"}
         except Exception as e:
             self.response = 500
             self.response_msg = e
             print(e)
+            reply_payload = {"Unable to execute action. Error: ": str(e)}
         super(Action, self).execute()
+        self.handler.wfile.write(json.dumps(reply_payload).encode("utf-8"))
 
 
 class ProjectStart(Action):
@@ -263,6 +272,7 @@ class HomePage(Page):
         head += """
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/basil.js"></script>
+        <script type="text/javascript" src="js/home.js"></script>
         """
         return head
 
@@ -292,6 +302,7 @@ class HomePage(Page):
         </div>
         <p id="template-description"></p>
         <h2>Manage existing projects</h2>
+        <div id="progress"></div>
         <div id="project-statuses">
         <p id="loading-projects" class=\"instructions\">
         Loading projects status details ...</p>

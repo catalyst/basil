@@ -499,11 +499,14 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    progress = 0
     while True:
         if p.poll() == None:
             while True:
                 msg = str(p.stdout.readline(), "utf-8").strip()
-                command_progress['output'] += msg + '\n'
+                command_progress[keys.PROGRESS_OUTPUT] += msg + "\n"
+                progress += 1
+                command_progress[keys.PROGRESS_PROGRESS] = progress;
                 if not msg:
                     break
             error = str(p.stderr.read(), "utf-8").strip()
@@ -521,23 +524,28 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 raise Exception(msg.replace("\n", "<br><br>"))
         else:
             break
-    command_progress['finished'] = True
+    command_progress[keys.PROGRESS_FINISHED] = True
     if callback:
         callback()
 
-def run_vagrant_cmd(command_list, project_directory, callback=None):
+def run_vagrant_cmd(command_list, project_directory, blocking=False,
+        callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
     """
-    command_progress = dict(
-        finished = False,
-        progress = 0,
-        message = 'In progress',
-        output = '',
-    )
-    t = Thread(target=execute_blocking_vagrant_cmd, args=(command_list,
-        project_directory, command_progress, callback))
-    t.start()
+    command_progress = {
+        keys.PROGRESS_FINISHED: False,
+        keys.PROGRESS_PROGRESS: 0,
+        keys.PROGRESS_MESSAGE: "In progress",
+        keys.PROGRESS_OUTPUT: "",
+    }
+    cmd = partial(execute_blocking_vagrant_cmd, command_list,
+        project_directory, command_progress, callback)
+    if blocking:
+        cmd()
+    else:
+        t = Thread(target=cmd)
+        t.start()
     return command_progress
 
 # @TODO: Should we be passing the project_name instead?
@@ -545,8 +553,9 @@ def start_project(project_directory):
     """
     Open project - vagrant up.
     """
-    return run_vagrant_cmd(command_list=["vagrant", "up"],
-        project_directory=project_directory)
+    command_progress = run_vagrant_cmd(command_list=["vagrant", "up"],
+        project_directory=project_directory, blocking=False)
+    return command_progress
 
 def open_code(project_directory):
     """
@@ -662,8 +671,9 @@ def stop_project(project_directory):
     """
     Stop project - vagrant halt.
     """
-    return run_vagrant_cmd(command_list=["vagrant", "halt"],
-        project_directory=project_directory)
+    command_progress = run_vagrant_cmd(command_list=["vagrant", "halt"],
+        project_directory=project_directory, blocking=True)
+    return command_progress
 
 def destroy_project(project_directory):
     """
@@ -673,5 +683,5 @@ def destroy_project(project_directory):
     """
     callback = partial(shutil.rmtree, project_directory)
     command_progress = run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
-        project_directory=project_directory, callback=callback)
+        project_directory=project_directory, blocking=True, callback=callback)
     return command_progress
