@@ -54,6 +54,29 @@ td {
     vertical-align: top;
     padding: 8px;
 }
+/* Progress */
+#progress {
+    max-width: 600px;
+}
+#progress-heading {
+    font-size: 14px;
+    font-weight: bold;
+}
+#progress-bar {
+    height: 15px;
+    margin-bottom: 10px;
+}
+#progress-details {
+    max-height: 150px;
+    overflow-y: scroll;
+    color: white;
+    background-color: black;
+    padding: 6px;
+    margin-bottom: 10px;
+}
+#details-end{
+    height: 0;
+}
 /* Template selection */
 #templates-form {
     width: 400px;
@@ -133,10 +156,6 @@ td {
 #basil-logo {
     float: left;
     margin: 10px 30px 20px 0;
-}
-#progressbar {
-    max-width: 600px;
-    height: 30px;
 }
 .float-right {
     float: right;

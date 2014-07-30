@@ -76,7 +76,9 @@ function project_action(project_directory, project_name, url,
             }
         })
         .done(function(response){
-            success_handler();
+            if(success_handler){
+                success_handler();
+            }
         })
         .fail(function(jqXHR, error, ex){
             fail_handler();
@@ -90,11 +92,20 @@ function project_action(project_directory, project_name, url,
 
 function project_start(project_directory, project_name){
     project_action(project_directory, project_name,
-        "project-start", "start", "starting",
-        get_project_statuses, enable_all_btns);
-    // poll flat out
-    var unfinished = true;
-    var i = 0;
+        "project-start", "start", "starting");
+    $("#progress").append(make_el("p", [], function(p){
+        $(p).attr("id", "progress-heading");
+        $(p).text("Progress details ...");
+    }));
+    $("#progress").append(make_el("div", [], function(div){
+        $(div).attr("id", "progress-bar");
+        $(div).progressbar({value: 0});
+    }));
+    $("#progress").append(make_el("div", [], function(div){
+        $(div).attr("id", "progress-details");
+        $(div).html("Waiting for progress details ...");
+    }));
+    // poll recursively (relax - the server puts the pause in ;-) )
     var get_progress = function(){
         $.ajax({type: "GET",
                 async: false,
@@ -103,19 +114,24 @@ function project_start(project_directory, project_name){
             .done(function(response){
                 console.log(response);
                 if (response != ""){
-                    if(response.finished){
-                        // handle cleanup e.g. remove progress bar
-                        $("#progress").html("");
-                    } else {
-                        //display progress e.g. messages
+                    if(response.finished){ // handle cleanup e.g. remove progress bar
+                        $("#progress-heading").text("Finished");
+                        $("#progress-bar").progressbar({value: 100});
+                        setTimeout(cleanup_progress, 2000);
+                        get_project_statuses();
+                        enable_all_btns();
+                    } else { //display progress e.g. messages
                         var n_expected_msgs = 20;
                         var percent = (response.progress*100)/n_expected_msgs;
-                        var html_output = "<h2>" + response.message + "</h2><div id='progressbar'></div>"
-                            + "<p>Progress: approximately " + percent.toString() + "%</p>"
-                            + response.output.replace(/(\r\n|\n|\r)/gm, "<br>");
-                        $("#progress").html(html_output);
-                        $("#progressbar").progressbar({value: percent});
-                        get_progress(); // relax - the server puts the pause in ;-)
+                        $("#progress-heading").text(response.message);
+                        $("#progress-bar").progressbar({value: percent});
+                        if(response.output != ""){
+                            $("#progress-details").html(
+                                response.output.replace(/(\r\n|\n|\r)/gm, "<br>")) 
+                                    + "<span id='details-end'></span>";
+                            };
+                            $("#details-end").focus();
+                        get_progress();
                     };
                 }
             })
@@ -124,10 +140,20 @@ function project_start(project_directory, project_name){
                 var msg = "Original error: " + ex;
                 ok_dialog(title, msg);
             });
-            i++;
     };
     get_progress();
 };
+
+function cleanup_progress(){
+    $("#progress-details").slideUp(600, "swing", 
+        function(){
+            setTimeout(
+                function(){
+                    $("#progress").html("");
+                }, 
+                500);
+    });    
+}
 
 function project_stop(project_directory, project_name){
     project_action(project_directory, project_name,
