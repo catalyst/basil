@@ -481,9 +481,14 @@ def get_port_forwarded_collision_msg(cmd, error):
     return msg
 
 def execute_blocking_vagrant_cmd(command_list, project_directory,
-        command_progress, callback=None):
+        command_progress, msg_transformer=None, callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
+
+    command_progress -- mutable which allows us to communicate progress simply
+    by updating it.
+
+    msg_transformer -- function to turn message string to friendlier version
 
     Don't include lines breaks in exception - only the first line is sent via
     the header. Will be be displaying messages to user in html so use <br>
@@ -503,12 +508,21 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     while True:
         if p.poll() == None:
             while True:
-                msg = str(p.stdout.readline(), "utf-8").strip()
-                command_progress[keys.PROGRESS_OUTPUT] += msg + "\n"
                 progress += 1
                 command_progress[keys.PROGRESS_PROGRESS] = progress;
+                msg = str(p.stdout.readline(), "utf-8").strip()
                 if not msg:
                     break
+                if msg_transformer:
+                    summary, details = msg_transformer(msg)
+                else:
+                    summary, details = None, msg
+                if not summary:
+                    summary = command_progress[keys.PROGRESS_SUMMARY]
+                if not details:
+                    details = command_progress[keys.PROGRESS_DETAILS]
+                command_progress[keys.PROGRESS_SUMMARY] = summary;
+                command_progress[keys.PROGRESS_DETAILS] += details + "\n"
             error = str(p.stderr.read(), "utf-8").strip()
             if error:
                 cmd = " ".join(command_list)
@@ -529,18 +543,18 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
         callback()
 
 def run_vagrant_cmd(command_list, project_directory, blocking=False,
-        callback=None):
+        msg_transformer=None, callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
     """
     command_progress = {
         keys.PROGRESS_FINISHED: False,
         keys.PROGRESS_PROGRESS: 0,
-        keys.PROGRESS_MESSAGE: "In progress",
-        keys.PROGRESS_OUTPUT: "",
+        keys.PROGRESS_SUMMARY: "In progress",
+        keys.PROGRESS_DETAILS: "",
     }
     cmd = partial(execute_blocking_vagrant_cmd, command_list,
-        project_directory, command_progress, callback)
+        project_directory, command_progress, msg_transformer, callback)
     if blocking:
         cmd()
     else:
@@ -548,13 +562,43 @@ def run_vagrant_cmd(command_list, project_directory, blocking=False,
         t.start()
     return command_progress
 
+def start_msg_transformer(text):
+    bringing_up = "Bringing machine up"
+    booting = "Booting Virtual Machine (may take a few minutes)"
+    transformers = [
+        (r"Bringing machine.+up",(bringing_up, text)),
+        (r"Clearing any previously set forwarded ports",(bringing_up, text)),
+        (r"Fixed port collision",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"Preparing network interfaces",(bringing_up, text)),
+        (r"Forwarding ports",(bringing_up, text)),
+        (r"Booting VM",(booting, text)),
+        (r"Waiting for machine to boot",(booting, text)),
+        (r"Machine booted",("Successfully booted", text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+        (r"previously set network interfaces",(bringing_up, text)),
+    ]
+    summary = None
+    details = text
+    for pattern, response in transformers:
+        if re.search(pattern, text):
+            summary, details = response
+            break
+    return summary, details
+
 # @TODO: Should we be passing the project_name instead?
 def start_project(project_directory):
     """
     Open project - vagrant up.
     """
+    start_msg_transformer
     command_progress = run_vagrant_cmd(command_list=["vagrant", "up"],
-        project_directory=project_directory, blocking=False)
+        project_directory=project_directory, blocking=False,
+        msg_transformer=start_msg_transformer)
     return command_progress
 
 def open_code(project_directory):

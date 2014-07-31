@@ -142,10 +142,10 @@ function project_start(project_directory, project_name){
                             var n_expected_msgs = 20;
                             var percent = (response.progress*100)/n_expected_msgs;
                             $("#progress-bar").progressbar({value: percent});
-                            $("#progress-summary").text(response.message);
-                            if(response.output != ""){
+                            $("#progress-summary").text(response.summary);
+                            if(response.details != ""){
                                 $("#progress-details").html(
-                                    response.output.replace(/(\r\n|\n|\r)/gm, "<br>")
+                                    response.details.replace(/(\r\n|\n|\r)/gm, "<br>")
                                 );
                                 $("#progress-details").scrollTop(100000000000000000);
                             };
