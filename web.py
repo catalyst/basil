@@ -328,24 +328,14 @@ class CreateProject(Page):
         except Exception as e:
             return ("Was unable to create \"{}\" project.<br>"
                 "Original error: {}".format(project_name, e))
-        try:
-            command_progress = core.start_project(project_directory)
-        except Exception as e:
-            return ("\"{}\" project successfully created but was unable to "
-                "start it.<br>Original error: {}".format(project_name, e))
-        # assumes the port we want has been tagged "webserver_port" - @Later make a proper requirement
-        project_config = core.project_load_config(project_name)
-        port2open = project_config[keys.PROJECT_PORTS].get(
-            keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)
         return """
             <h1>Success!</h1>
 
             <p class="instructions">Your "{project_name}" project was
-            successfully built.</p>
+            successfully configured.</p>
 
-            <p>Click <a target='_blank' href='http://localhost:{port2open}/'>
-            open {project_name}</a> to see feedback from your project.</p>
-            """.format(project_name=project_name, port2open=port2open)
+            <p>Return to <a href='/'>Home Page</a> to work with your
+            "{project_name}" project.</p>""".format(project_name=project_name)
 
 
 class GetValues(Page):

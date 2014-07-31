@@ -93,11 +93,29 @@ function project_action(project_directory, project_name, url,
 function project_start(project_directory, project_name){
     project_action(project_directory, project_name,
         "project-start", "start", "starting");
-    $("#progress").html("<p id='progress-heading'>Progress details ...</p>" 
-        + "<div id='progress-bar'></div>" 
+    $("#progress").html(
+        "<p id='progress-heading'>Progress starting " + project_name + "</p>" 
+        + "<div id='progress-bar'></div>"
+        + "<div id='progress-summary'>Starting ...</div>"
+        + "<div id='details-block'>"
+            + "<img id='details-arrow' src='images/show_arrow.png'>"
+            + "<div id='details-lbl'>Details</div>"
+            + "<div class='clear-both'></div>"
+        + "</div>"
         + "<div id='progress-details'>Waiting for progress details ...</div>");
     $("#progress-bar").progressbar({value: 0});
-    /* poll recursively with pauses at client end. Warning - alternative approach 
+    $("#progress-details").hide();
+    var show = true;
+    $("#details-arrow").click(function(){
+        if(show){
+            $("#progress-details").show();
+            $("#details-arrow").attr("src", "images/hide_arrow.png");
+        } else {
+            $("#progress-details").hide();
+            $("#details-arrow").attr("src", "images/show_arrow.png");
+        }
+        show = !show;
+    });    /* poll recursively with pauses at client end. Warning - alternative approach 
     of instant recursion at client prevented Chromium from updating the DOM till 
     function returned (even though server added pauses).*/
     var prev_response_str = "";
@@ -111,8 +129,8 @@ function project_start(project_directory, project_name){
                 var response_str = JSON.stringify(response);
                 if (response != ""){
                     if(response.finished){ // handle cleanup e.g. remove progress bar
-                        $("#progress-heading").text("Finished");
                         $("#progress-bar").progressbar({value: 100});
+                        $("#progress-summary").text("Finished");
                         setTimeout(cleanup_progress, 2000);
                         get_project_statuses();
                         enable_all_btns();
@@ -123,8 +141,8 @@ function project_start(project_directory, project_name){
                             prev_response_str = response_str;
                             var n_expected_msgs = 20;
                             var percent = (response.progress*100)/n_expected_msgs;
-                            $("#progress-heading").text(response.message);
                             $("#progress-bar").progressbar({value: percent});
+                            $("#progress-summary").text(response.message);
                             if(response.output != ""){
                                 $("#progress-details").html(
                                     response.output.replace(/(\r\n|\n|\r)/gm, "<br>")
@@ -146,14 +164,15 @@ function project_start(project_directory, project_name){
 };
 
 function cleanup_progress(){
-    $("#progress-details").slideUp(600, "swing", 
+    $("#progress").slideUp(600, "swing", 
         function(){
             setTimeout(
                 function(){
                     $("#progress").html("");
+                    $("#progress").show();
                 }, 
                 500);
-    });    
+    });
 }
 
 function project_stop(project_directory, project_name){

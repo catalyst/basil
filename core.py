@@ -481,7 +481,7 @@ def get_port_forwarded_collision_msg(cmd, error):
     return msg
 
 def execute_blocking_vagrant_cmd(command_list, project_directory,
-        command_progress,callback=None):
+        command_progress, callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
 
