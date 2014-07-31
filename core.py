@@ -575,6 +575,7 @@ def start_msg_transformer(text):
         (r"Booting VM",(booting, text)),
         (r"Waiting for machine to boot",(booting, text)),
         (r"Machine booted",("Successfully booted", text)),
+        (r"Running provisioner",("Provisioning project", text)),
         (r"previously set network interfaces",(bringing_up, text)),
         (r"previously set network interfaces",(bringing_up, text)),
         (r"previously set network interfaces",(bringing_up, text)),
