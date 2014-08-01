@@ -199,6 +199,12 @@ function project_stop(project_directory, project_name){
         get_project_statuses, enable_all_btns);
 };
 
+function project_reset(project_directory, project_name){
+    project_action(project_directory, project_name,
+        "project-reset", "reset", "resetting",
+        get_project_statuses, enable_all_btns);
+};
+
 function confirm_destroy(project_directory, project_name) {
     $("#dialog").html("<p>Destroying your project is irreversible. "
         + "Do you really want to destroy it?</p>");
@@ -338,16 +344,19 @@ function display_project_statuses(response){
                             case "Not Created":
                             case "Aborted":
                             case "Poweroff":
-                                // Start, Destroy
+                                // Start, Reset, Destroy
                                 id++;
                                 add_std_button(td, id, [], "Start",
                                     project_start, status);
                                 id++;
                                 add_std_button(td, id, ["float-right"],
                                     "Destroy", project_destroy, status);
+                                id++;
+                                add_std_button(td, id, ["float-right"],
+                                    "Reset", project_reset, status);
                                 break;
                             case "Running":
-                                // View, Code, Command, Stop, Destroy
+                                // View, Code, Command, Stop, Reset, Destroy
                                 $(td).append(make_el("input", [], function(btn){
                                     $(btn).attr("id", "btn_" + ++id);
                                     $(btn).attr("name", "btn_" + id);
@@ -385,6 +394,9 @@ function display_project_statuses(response){
                                 id++;
                                 add_std_button(td, id, ["float-right"],
                                     "Destroy", project_destroy, status);
+                                id++;
+                                add_std_button(td, id, ["float-right"],
+                                    "Reset", project_reset, status);
                                 break;
                          };
                     }));

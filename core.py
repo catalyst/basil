@@ -543,6 +543,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 callback()
             break
 
+
 class CommandProgress(object):
 
     class JSONEncoder(json.JSONEncoder):
@@ -573,6 +574,7 @@ class CommandProgress(object):
 
     def to_json(self):
         return json.dumps(self, cls=self.JSONEncoder)
+
 
 def run_vagrant_cmd(command_list, project_directory, blocking=False,
         msg_transformer=None, callback=None):
@@ -737,6 +739,14 @@ def stop_project(project_directory):
     Stop project - vagrant halt.
     """
     command_progress = run_vagrant_cmd(command_list=["vagrant", "halt"],
+        project_directory=project_directory, blocking=True)
+    return command_progress
+
+def reset_project(project_directory):
+    """
+    Reprovision project - vagrant provision.
+    """
+    command_progress = run_vagrant_cmd(command_list=["vagrant", "provision"],
         project_directory=project_directory, blocking=True)
     return command_progress
 

@@ -238,6 +238,13 @@ class ProjectStop(Action):
             args=[self.project_directory,])
 
 
+class ProjectReset(Action):
+
+    def execute(self):
+        super(ProjectReset, self).execute(func=core.reset_project,
+            args=[self.project_directory,])
+        
+
 class ProjectDestroy(Action):
 
     def execute(self):
@@ -446,6 +453,7 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
             (r'get-statuses', {'GET': GetStatuses,}),
             (r'project-start', {'POST': ProjectStart,}),
             (r'project-stop', {'POST': ProjectStop,}),
+            (r'project-reset', {'POST': ProjectReset,}),
             (r'project-destroy', {'POST': ProjectDestroy,}),
             (r'open-code', {'POST': OpenCode,}),
             (r'open-shell', {'POST': OpenShell,}),
