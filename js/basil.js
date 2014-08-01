@@ -65,7 +65,7 @@ function make_el(el_type, classes, fn_or_val){
 function project_action(project_directory, project_name, url,
         action_lbl_do, action_lbl_doing, success_handler, fail_handler){
     /*
-    The success and fail handlers may themselves be AJAX so we had best 
+    The success and fail handlers may themselves be AJAX so we had best
     leave switching the hourglass off to them in all cases.
     */
     $("body").css("cursor", "progress");
@@ -94,7 +94,7 @@ function project_start(project_directory, project_name){
     project_action(project_directory, project_name,
         "project-start", "start", "starting");
     $("#progress").html(
-        "<p id='progress-heading'>Progress starting " + project_name + "</p>" 
+        "<p id='progress-heading'>Progress starting " + project_name + "</p>"
         + "<div id='progress-bar'></div>"
         + "<div id='progress-summary'>Starting ...</div>"
         + "<div id='details-block'>"
@@ -115,11 +115,23 @@ function project_start(project_directory, project_name){
             $("#details-arrow").attr("src", "images/show_arrow.png");
         }
         show = !show;
-    });    /* poll recursively with pauses at client end. Warning - alternative approach 
-    of instant recursion at client prevented Chromium from updating the DOM till 
+    });    /* poll recursively with pauses at client end. Warning - alternative approach
+    of instant recursion at client prevented Chromium from updating the DOM till
     function returned (even though server added pauses).*/
     var prev_response_str = "";
-    var get_progress = function(){
+    var command_progress_states = {
+        ACTIVE: 1,
+        FINISHED: 2,
+        ERROR: 3,
+    }
+    function command_end() {
+        // handle cleanup e.g. remove progress bar
+        $("#progress-bar").progressbar({value: 100});
+        setTimeout(cleanup_progress, 2000);
+        get_project_statuses();
+        enable_all_btns();
+    }
+    function get_progress() {
         $.ajax({type: "GET",
                 async: false,
                 url: "get-command-progress"
@@ -128,13 +140,17 @@ function project_start(project_directory, project_name){
                 //console.log(response);
                 var response_str = JSON.stringify(response);
                 if (response != ""){
-                    if(response.finished){ // handle cleanup e.g. remove progress bar
-                        $("#progress-bar").progressbar({value: 100});
+                    if (response.state == command_progress_states.FINISHED) {
                         $("#progress-summary").text("Finished");
-                        setTimeout(cleanup_progress, 2000);
-                        get_project_statuses();
-                        enable_all_btns();
-                    } else { //display progress e.g. messages (if change)
+                        command_end();
+                    }
+                    else if (response.state == command_progress_states.ERROR) {
+                        $("#progress-summary").text("Error");
+                        command_end();
+                        alert("Error occurred: " + command_progress.error);
+                    }
+                    else {
+                        //display progress e.g. messages (if change)
                         var changed = (prev_response_str != response_str);
                         if(changed){ // hammer the html refreshing less
                             //console.log("Changed");
@@ -164,13 +180,13 @@ function project_start(project_directory, project_name){
 };
 
 function cleanup_progress(){
-    $("#progress").slideUp(600, "swing", 
+    $("#progress").slideUp(600, "swing",
         function(){
             setTimeout(
                 function(){
                     $("#progress").html("");
                     $("#progress").show();
-                }, 
+                },
                 500);
     });
 }
@@ -202,7 +218,7 @@ function confirm_destroy(project_directory, project_name) {
 		        click: function() {
 			        $( this ).dialog("close");
                     project_action(project_directory, project_name,
-                        "project-destroy", "destroy", "destroying", 
+                        "project-destroy", "destroy", "destroying",
                         get_project_statuses, enable_all_btns)
 		        }
 	        }
@@ -322,10 +338,10 @@ function display_project_statuses(response){
                             case "Poweroff":
                                 // Start, Destroy
                                 id++;
-                                add_std_button(td, id, [], "Start", 
+                                add_std_button(td, id, [], "Start",
                                     project_start, status);
                                 id++;
-                                add_std_button(td, id, ["float-right"], 
+                                add_std_button(td, id, ["float-right"],
                                     "Destroy", project_destroy, status);
                                 break;
                             case "Running":
@@ -335,12 +351,12 @@ function display_project_statuses(response){
                                     $(btn).attr("name", "btn_" + id);
                                     $(btn).attr("type", "button");
                                     $(btn).attr("value", "View");
-                                    var view_url = "'http://localhost:" 
+                                    var view_url = "'http://localhost:"
                                         + status["webserver_port"] + "'";
                                     var view_cmd = "window.open(" + view_url + ")";
                                     $(btn).attr("onClick", view_cmd);
-                                    $(btn).attr("title", "Open \"" 
-                                        + status["project_name"] + "\" (on " 
+                                    $(btn).attr("title", "Open \""
+                                        + status["project_name"] + "\" (on "
                                         + view_url + ")");
                                 }));
                                 $(td).append(make_el("input", [], function(btn){
@@ -362,10 +378,10 @@ function display_project_statuses(response){
                                     });
                                 }));
                                 id++;
-                                add_std_button(td, id, [], "Stop", project_stop, 
+                                add_std_button(td, id, [], "Stop", project_stop,
                                     status);
                                 id++;
-                                add_std_button(td, id, ["float-right"], 
+                                add_std_button(td, id, ["float-right"],
                                     "Destroy", project_destroy, status);
                                 break;
                          };

@@ -191,7 +191,7 @@ class GetCommandProgress(Request):
     def execute(self):
         super(GetCommandProgress, self).execute()
         try:
-            payload = json.dumps(command_progress)
+            payload = command_progress.to_json()
         except Exception as ex:
             print("Problem getting payload")
             payload = ""
