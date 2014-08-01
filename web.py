@@ -243,7 +243,7 @@ class ProjectReset(Action):
     def execute(self):
         super(ProjectReset, self).execute(func=core.reset_project,
             args=[self.project_directory,])
-        
+
 
 class ProjectDestroy(Action):
 

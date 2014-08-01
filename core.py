@@ -595,6 +595,8 @@ def start_msg_transformer(text):
     bringing_up = "Bringing machine up"
     booting = "Booting Virtual Machine (may take a few minutes)"
     transformers = [
+        (r"Box '.+' could not be found. Attempting to find and install...",
+            ('Downloading base box for project', text)),
         (r"Bringing machine.+up",(bringing_up, text)),
         (r"Clearing any previously set forwarded ports",(bringing_up, text)),
         (r"Fixed port collision",(bringing_up, text)),
