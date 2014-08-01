@@ -61,7 +61,15 @@ VAGRANT_STATUS_STATE_HUMAN_SHORT = "state-human-short"
 VAGRANT_STATUS_STATE_HUMAN_LONG = "state-human-long"
 VAGRANT_COMMA = "%!(VAGRANT_COMMA)"
 
-PROGRESS_FINISHED = "finished"
+PROGRESS_STATE = "state"
 PROGRESS_PROGRESS = "progress"
 PROGRESS_SUMMARY = "summary"
 PROGRESS_DETAILS = "details"
+PROGRESS_ERROR = "error"
+
+from enum import Enum
+
+class CommandProgressStates(Enum):
+    ACTIVE = 1
+    FINISHED = 2
+    ERROR = 3

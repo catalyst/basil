@@ -35,6 +35,7 @@ project.
 """
 
 from collections import namedtuple
+from enum import Enum
 import fileinput
 from functools import partial
 import importlib.machinery
@@ -504,12 +505,10 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     """
     p = subprocess.Popen(command_list, cwd=project_directory,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    progress = 0
     while True:
         if p.poll() == None:
             while True:
-                progress += 1
-                command_progress[keys.PROGRESS_PROGRESS] = progress;
+                command_progress.progress += 1;
                 msg = str(p.stdout.readline(), "utf-8").strip()
                 if not msg:
                     break
@@ -518,11 +517,11 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 else:
                     summary, details = None, msg
                 if not summary:
-                    summary = command_progress[keys.PROGRESS_SUMMARY]
+                    summary = command_progress.summary
                 if not details:
-                    details = command_progress[keys.PROGRESS_DETAILS]
-                command_progress[keys.PROGRESS_SUMMARY] = summary;
-                command_progress[keys.PROGRESS_DETAILS] += details + "\n"
+                    details = command_progress.details
+                command_progress.summary = summary;
+                command_progress.details += details + "\n"
             error = str(p.stderr.read(), "utf-8").strip()
             if error:
                 cmd = " ".join(command_list)
@@ -535,24 +534,52 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                         break
                 if not msg:
                     msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
-                raise Exception(msg.replace("\n", "<br><br>"))
+                command_progress.state = keys.CommandProgressStates.ERROR
+                command_progress.error = msg
+                return
         else:
+            command_progress.state = keys.CommandProgressStates.FINISHED
+            if callback:
+                callback()
             break
-    command_progress[keys.PROGRESS_FINISHED] = True
-    if callback:
-        callback()
+
+class CommandProgress(object):
+
+    class JSONEncoder(json.JSONEncoder):
+        def default(self, command_progress):
+            return {
+                keys.PROGRESS_STATE: command_progress.state.value,
+                keys.PROGRESS_PROGRESS: command_progress.progress,
+                keys.PROGRESS_SUMMARY: command_progress.summary,
+                keys.PROGRESS_DETAILS: command_progress.details,
+                keys.PROGRESS_ERROR: command_progress.error,
+            }
+
+    def __init__(self):
+        self.state = keys.CommandProgressStates.ACTIVE
+        self.progress = 0
+        self.summary = "In progress"
+        self.details = ""
+        self.error = ""
+        self.observers = []
+
+    def addObserver(self, observer):
+        if observer not in self.observers:
+            self.observers.append(observer)
+
+    def notifyObservers(self):
+        for observer in self.observers:
+            observer.update(self)
+
+    def to_json(self):
+        return json.dumps(self, cls=self.JSONEncoder)
 
 def run_vagrant_cmd(command_list, project_directory, blocking=False,
         msg_transformer=None, callback=None):
     """
     command_list -- must be a list ready for subprocess to use.
     """
-    command_progress = {
-        keys.PROGRESS_FINISHED: False,
-        keys.PROGRESS_PROGRESS: 0,
-        keys.PROGRESS_SUMMARY: "In progress",
-        keys.PROGRESS_DETAILS: "",
-    }
+    command_progress = CommandProgress()
     cmd = partial(execute_blocking_vagrant_cmd, command_list,
         project_directory, command_progress, msg_transformer, callback)
     if blocking:
@@ -575,12 +602,7 @@ def start_msg_transformer(text):
         (r"Booting VM",(booting, text)),
         (r"Waiting for machine to boot",(booting, text)),
         (r"Machine booted",("Successfully booted", text)),
-        (r"previously set network interfaces",(bringing_up, text)),
-        (r"previously set network interfaces",(bringing_up, text)),
-        (r"previously set network interfaces",(bringing_up, text)),
-        (r"previously set network interfaces",(bringing_up, text)),
-        (r"previously set network interfaces",(bringing_up, text)),
-        (r"previously set network interfaces",(bringing_up, text)),
+        (r"Running provisioner",("Provisioning project", text)),
     ]
     summary = None
     details = text

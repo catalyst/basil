@@ -27,6 +27,12 @@ class django {
     source => "puppet:///modules/django/home/vagrant/src/requirements.txt",
   }
 
+  file { '/etc/init/runserver.conf':
+    ensure => present,
+    source => "puppet:///modules/django/etc/init/runserver.conf",
+    mode => "0555",
+  }
+
   exec { 'sudo pip install -r requirements.txt':
     cwd => '/home/vagrant/src',
     require => [
@@ -43,11 +49,13 @@ class django {
     path => [ '/usr/local/bin' ],
   }
 
-  exec { 'python manage.py runserver 0.0.0.0:8000 &':
+  exec { 'service runserver start':
     cwd => '/home/vagrant/src/{{__basil__.project_name}}',
-    require => Exec['django-admin.py startproject {{__basil__.project_name}}'],
-    subscribe => Exec['django-admin.py startproject {{__basil__.project_name}}'],
-    path => [ '/usr/bin' ],
+    require => [
+      Exec['django-admin.py startproject {{__basil__.project_name}}'],
+      File['/etc/init/runserver.conf'],
+    ],
+    path => [ '/usr/bin', '/usr/sbin', '/sbin' ],
   }
 
 }
