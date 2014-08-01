@@ -81,7 +81,9 @@ function project_action(project_directory, project_name, url,
             }
         })
         .fail(function(jqXHR, error, ex){
-            fail_handler();
+            if(success_handler){
+                fail_handler();
+            };
             var title = "Problem " + action_lbl_doing + " \"" + project_name
                 + "\"";
             var msg = "Unable to " + action_lbl_do + " \"" + project_name
