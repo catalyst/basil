@@ -542,7 +542,6 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
             while True:
                 command_progress.progress += 1;
                 msg = str(p.stdout.readline(), "utf-8").strip()
-                print(msg)
                 if not msg:
                     break
                 if msg_transformer:

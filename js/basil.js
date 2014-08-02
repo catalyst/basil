@@ -93,7 +93,7 @@ function project_action(project_directory, project_name, url,
 };
 
 function show_progress(project_name, n_expected_msgs, action_lbl_doing, 
-        action_lbl_doing_cap){
+        action_lbl_doing_cap, callback){
     $("#progress").html(
         "<p id='progress-heading'>Progress " + action_lbl_doing + " " 
         + project_name + "</p>"
@@ -130,6 +130,9 @@ function show_progress(project_name, n_expected_msgs, action_lbl_doing,
         // handle cleanup e.g. remove progress bar
         $("#progress-bar").progressbar({value: 100});
         setTimeout(cleanup_progress, 2000);
+        if (callback){
+            callback();
+        };
     }
     function get_progress() {
         $.ajax({type: "GET",
@@ -188,7 +191,11 @@ function show_progress(project_name, n_expected_msgs, action_lbl_doing,
 function project_start(project_directory, project_name){
     project_action(project_directory, project_name,
         "project-start", "start", "starting");
-    show_progress(project_name, 25, "starting", "Starting")
+    function update(){
+        get_project_statuses();
+        enable_all_btns();
+    };
+    show_progress(project_name, 25, "starting", "Starting", update);
 };
 
 function cleanup_progress(){
