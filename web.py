@@ -58,7 +58,6 @@ status2friendly = {
         Home Page). Don't forget to Close it before turning off your machine.
         """}
 
-# @TODO: This should be a list/dict of command_progress.
 command_progress = None
 
 def get_postvars(handler):
@@ -156,28 +155,36 @@ class GetStatuses(Request):
         self.headers['Accept'] = 'text/plain'
 
     def execute(self):
-        super(GetStatuses, self).execute()
-        project_statuses = core.get_project_statuses()
-        project_feedback = []
-        if project_statuses:
-            for project_status in project_statuses:
-                project_state_display = (project_status.state.title()
-                    .replace("_", " "))
-                project_feedback.append({
-                    "project_name": project_status.project_name,
-                    "project_directory": join(settings.projects_dir,
-                        project_status.project_name),
-                    "template_name": project_status.template_name,
-                    "template_version": project_status.template_version,
-                    "project_state": project_state_display,
-                    "project_state_msg": status2friendly.get(
-                        project_status.state, project_status.state_human_long)
-                        .format(project_status.project_name),
-                    "webserver_port": project_status.webserver_port,
-                })
-        else:
-            project_feedback = ""
+        try:
+            project_statuses = core.get_project_statuses()
+            project_feedback = []
+            if project_statuses:
+                for project_status in project_statuses:
+                    project_state_display = (project_status.state.title()
+                        .replace("_", " "))
+                    project_feedback.append({
+                        "project_name": project_status.project_name,
+                        "project_directory": join(settings.projects_dir,
+                            project_status.project_name),
+                        "template_name": project_status.template_name,
+                        "template_version": project_status.template_version,
+                        "project_state": project_state_display,
+                        "project_state_msg": status2friendly.get(
+                            project_status.state, project_status.state_human_long)
+                            .format(project_status.project_name),
+                        "webserver_port": project_status.webserver_port,
+                    })
+            else:
+                project_feedback = ""
+        except Exception as e:
+            self.response = 500
+            msg = str(e)
+            if not msg:
+                msg = "Unknown error"
+            self.response_msg = msg
+            project_feedback = {"Success": "False", "Error": str(e)}
         payload = json.dumps(project_feedback).encode("utf-8")
+        super(GetStatuses, self).execute()
         self.handler.wfile.write(payload)
 
 
@@ -189,12 +196,14 @@ class GetCommandProgress(Request):
         self.headers['Accept'] = 'text/plain'
 
     def execute(self):
-        super(GetCommandProgress, self).execute()
         try:
             payload = command_progress.to_json()
-        except Exception as ex:
-            print("Problem getting payload")
-            payload = ""
+        except Exception as e:
+            self.response = 500
+            self.response_msg = "Unable to read progress details from object"
+            payload = ("Unable to read progress details from object. "
+                "Orig error: {}".format(e))
+        super(GetCommandProgress, self).execute()
         self.handler.wfile.write(payload.encode("utf-8"))
 
 
@@ -216,10 +225,13 @@ class Action(Request):
             command_progress = func(*args) # command_progress is a mutable that is probably yet to be updated (if actual task passed to a thread)
             reply_payload = {"Action state": "submitted successfully"}
         except Exception as e:
+            # must kill off original action request ...
             self.response = 500
-            self.response_msg = e
-            print(e)
+            self.response_msg = str(e, "utf-8").replace("\n", " ")
             reply_payload = {"Unable to execute action. Error: ": str(e)}
+            # ...  AND any progress requests
+            command_progress = core.CommandProgress()
+            command_progress.state = keys.CommandProgressStates.ERROR
         super(Action, self).execute()
         self.handler.wfile.write(json.dumps(reply_payload).encode("utf-8"))
 
