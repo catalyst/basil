@@ -511,8 +511,14 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     command_list -- must be a list ready for subprocess to use.
 
     command_progress -- mutable which allows us to communicate progress simply
-    by updating it.
-
+    by updating it:
+       - state
+       - progress
+       - summary
+       - details
+       - error
+    If an error, no need to update anything but state and error.
+    
     msg_transformer -- function to turn message string to friendlier version
 
     Don't include lines breaks in exception - only the first line is sent via
@@ -555,7 +561,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 command_progress.summary = summary;
                 command_progress.details += details + "\n"
             error = str(p.stderr.read(), "utf-8").strip()
-            if error:
+            if error:                
                 msg = None
                 error_transforms = [get_port_forwarded_collision_msg, ]
                 for error_transform in error_transforms:
