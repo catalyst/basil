@@ -412,6 +412,20 @@ def get_project_statuses():
             project_info.template_version))
     return project_statuses
 
+def missing_virtualbox(project_directory):
+    """
+    --machine-readable at end of vagrant status prevents message being output
+    when VB not detected
+    """
+    try:
+        p = subprocess.Popen(["vagrant", "status"], stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, cwd=project_directory)
+        unused, err = p.communicate()
+        missing = b"could not detect VirtualBox!" in err
+    except Exception:
+        missing = False
+    return missing
+
 def get_project_status_via_vagrant(project_name, template_name,
         template_version):
     """
@@ -419,8 +433,18 @@ def get_project_status_via_vagrant(project_name, template_name,
     Note - API not stabilised yet
     """
     project_directory = join(projects_dir, project_name)
-    output = str(subprocess.check_output(["vagrant", "status",
-        "--machine-readable"], cwd=project_directory), "utf-8")
+    try:
+        output = str(subprocess.check_output(["vagrant", "status",
+                "--machine-readable"], cwd=project_directory), "utf-8")
+    except FileNotFoundError as e:
+        raise Exception("Unable to get project status using vagrant. Is "
+            "vagrant installed on this machine?")
+    except Exception as e:
+        if missing_virtualbox(project_directory):
+            raise Exception("VirtualBox needs to be installed before you "
+                "can use Basil")
+        else:
+            raise
     status_dict = {}
     for line in output.split("\n"):
         try:
@@ -487,8 +511,14 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     command_list -- must be a list ready for subprocess to use.
 
     command_progress -- mutable which allows us to communicate progress simply
-    by updating it.
-
+    by updating it:
+       - state
+       - progress
+       - summary
+       - details
+       - error
+    If an error, no need to update anything but state and error.
+    
     msg_transformer -- function to turn message string to friendlier version
 
     Don't include lines breaks in exception - only the first line is sent via
@@ -503,8 +533,16 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
     If no transformations of the error message occur we use the cmd and the
     raw error to form a basic error message.
     """
-    p = subprocess.Popen(command_list, cwd=project_directory,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = " ".join(command_list)
+    try:
+        p = subprocess.Popen(command_list, cwd=project_directory,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except FileNotFoundError as e:
+        command_progress.state = keys.CommandProgressStates.ERROR
+        msg = ("Problem running vagrant command {}. Is vagrant even installed "
+            "on this machine? Error: {}".format(cmd, e))
+        command_progress.error = msg
+        raise Exception(msg)
     while True:
         if p.poll() == None:
             while True:
@@ -523,8 +561,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 command_progress.summary = summary;
                 command_progress.details += details + "\n"
             error = str(p.stderr.read(), "utf-8").strip()
-            if error:
-                cmd = " ".join(command_list)
+            if error:                
                 msg = None
                 error_transforms = [get_port_forwarded_collision_msg, ]
                 for error_transform in error_transforms:
@@ -536,7 +573,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                     msg = "Command \"{}\" failed. Reason: {}".format(cmd, error)
                 command_progress.state = keys.CommandProgressStates.ERROR
                 command_progress.error = msg
-                return
+                raise Exception(msg)
         else:
             command_progress.state = keys.CommandProgressStates.FINISHED
             if callback:
@@ -584,12 +621,14 @@ def run_vagrant_cmd(command_list, project_directory, blocking=False,
     command_progress = CommandProgress()
     cmd = partial(execute_blocking_vagrant_cmd, command_list,
         project_directory, command_progress, msg_transformer, callback)
-    if blocking:
-        cmd()
-    else:
-        t = Thread(target=cmd)
-        t.start()
-    return command_progress
+    try:
+        if blocking:
+            cmd()
+        else:
+            t = Thread(target=cmd)
+            t.start()
+    finally:
+        return command_progress
 
 def start_msg_transformer(text):
     bringing_up = "Bringing machine up"

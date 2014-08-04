@@ -1,5 +1,4 @@
 jQuery(document).ready(function($){
-
     $(function(){
         $("#templates-dropdown").trigger('change');
     });
@@ -11,8 +10,6 @@ jQuery(document).ready(function($){
         $("#template-description").text(template_title
             + ": " + template_description);
     });
-
-
     get_project_statuses();
     var refresh_in_ms = 5*60*1000;
     setInterval(get_project_statuses, refresh_in_ms);

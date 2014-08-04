@@ -92,13 +92,30 @@ function project_action(project_directory, project_name, url,
         });
 };
 
-function project_start(project_directory, project_name){
-    project_action(project_directory, project_name,
-        "project-start", "start", "starting");
+function update_details(html){
+    $("#progress-details").html(html
+        ).scrollTop(100000000000000000);
+};
+
+function cleanup_progress(){
+    $("#progress").slideUp(600, "swing",
+        function(){
+            setTimeout(
+                function(){
+                    $("#progress").html("");
+                    $("#progress").show();
+                },
+                500);
+    });
+}
+
+function show_progress(project_name, n_expected_msgs, action_lbl_doing,
+        action_lbl_doing_cap, callback){
     $("#progress").html(
-        "<p id='progress-heading'>Progress starting " + project_name + "</p>"
+        "<p id='progress-heading'>Progress " + action_lbl_doing + " "
+        + project_name + "</p>"
         + "<div id='progress-bar'></div>"
-        + "<div id='progress-summary'>Starting ...</div>"
+        + "<div id='progress-summary'>" + action_lbl_doing_cap + " ...</div>"
         + "<div id='details-block'>"
             + "<img id='details-arrow' src='images/show_arrow.png'>"
             + "<div id='details-lbl'>Details</div>"
@@ -130,8 +147,9 @@ function project_start(project_directory, project_name){
         // handle cleanup e.g. remove progress bar
         $("#progress-bar").progressbar({value: 100});
         setTimeout(cleanup_progress, 2000);
-        get_project_statuses();
-        enable_all_btns();
+        if (callback){
+            callback();
+        };
     }
     function get_progress() {
         $.ajax({type: "GET",
@@ -140,16 +158,29 @@ function project_start(project_directory, project_name){
             })
             .done(function(response){
                 //console.log(response);
-                var response_str = JSON.stringify(response);
-                if (response != ""){
+                if(response == ""){
+                    var response_str = response;
+                } else {
+                    var response_str = JSON.stringify(response);
                     if (response.state == command_progress_states.FINISHED) {
                         $("#progress-summary").text("Finished");
                         command_end();
                     }
                     else if (response.state == command_progress_states.ERROR) {
-                        $("#progress-summary").text("Error");
+                        var msg = "Error occurred: "
+                            + response.error.replace(/(\r\n|\n|\r)/gm, "<br>");
+                        var error_len = 120;
+                        if (msg.length > error_len){
+                            var error2display = msg.substring(0, error_len) + " ...";
+                        } else {
+                            var error2display = msg;
+                        }
+                        $("#progress-summary").text(error2display);
+                        update_details(msg);
                         command_end();
-                        alert("Error occurred: " + response.error);
+                        var title = "Problem " + action_lbl_doing + " "
+                            + project_name;
+                        ok_dialog(title, msg);
                     }
                     else {
                         //display progress e.g. messages (if change)
@@ -157,15 +188,11 @@ function project_start(project_directory, project_name){
                         if(changed){ // hammer the html refreshing less
                             //console.log("Changed");
                             prev_response_str = response_str;
-                            var n_expected_msgs = 20;
                             var percent = (response.progress*100)/n_expected_msgs;
                             $("#progress-bar").progressbar({value: percent});
                             $("#progress-summary").text(response.summary);
                             if(response.details != ""){
-                                $("#progress-details").html(
-                                    response.details.replace(/(\r\n|\n|\r)/gm, "<br>")
-                                );
-                                $("#progress-details").scrollTop(100000000000000000);
+                                update_details(response.details.replace(/(\r\n|\n|\r)/gm, "<br>"));
                             };
                         };
                         setTimeout(get_progress, 500);
@@ -173,25 +200,24 @@ function project_start(project_directory, project_name){
                 }
             })
             .fail(function(jqXHR, error, ex){
-                var title = "Problem getting progress details";
+                var title = "Problem " + action_lbl_doing + " "
+                    + project_name;
                 var msg = "Original error: " + ex;
                 ok_dialog(title, msg);
             });
     };
     get_progress();
-};
-
-function cleanup_progress(){
-    $("#progress").slideUp(600, "swing",
-        function(){
-            setTimeout(
-                function(){
-                    $("#progress").html("");
-                    $("#progress").show();
-                },
-                500);
-    });
 }
+
+function project_start(project_directory, project_name){
+    project_action(project_directory, project_name,
+        "project-start", "start", "starting");
+    function update(){
+        get_project_statuses();
+        enable_all_btns();
+    };
+    show_progress(project_name, 25, "starting", "Starting", update);
+};
 
 function project_stop(project_directory, project_name){
     project_action(project_directory, project_name,
@@ -203,6 +229,7 @@ function project_reset(project_directory, project_name){
     project_action(project_directory, project_name,
         "project-reset", "reset", "resetting",
         get_project_statuses, enable_all_btns);
+    show_progress(project_name, 10, "resetting", "Resetting");
 };
 
 function confirm_destroy(project_directory, project_name) {
@@ -241,10 +268,15 @@ function project_destroy(project_directory, project_name){
 
 function ok_dialog(title, msg){
     $("#dialog").html("<p>" + msg + "</p>");
+    if (msg.length < 200){
+        var width = 400;
+    } else {
+        var width = 700;
+    };
     $("#dialog").dialog({
         title: title,
         autoOpen: false,
-        width: 400,
+        width: width,
         dialogClass: "no-close",
         buttons: [
 	        {
@@ -294,10 +326,10 @@ function open_shell(project_directory){
 
 function add_std_button(td, id, classes, value, action_func, status){
     $(td).append(make_el("input", classes, function(btn){
-        $(btn).attr("id", "btn_" + id);
-        $(btn).attr("name", "btn_" + id);
-        $(btn).attr("type", "button");
-        $(btn).attr("value", value);
+        $(btn).attr({"id": "btn_" + id,
+            "name": "btn_" + id,
+            "type": "button",
+            "value": value});
         $(btn).click(function(){
             disable_all_btns();
             action_func(status["project_directory"],
@@ -358,33 +390,38 @@ function display_project_statuses(response){
                             case "Running":
                                 // View, Code, Command, Stop, Reset, Destroy
                                 $(td).append(make_el("input", [], function(btn){
-                                    $(btn).attr("id", "btn_" + ++id);
-                                    $(btn).attr("name", "btn_" + id);
-                                    $(btn).attr("type", "button");
-                                    $(btn).attr("value", "View");
+                                    $(btn).attr({
+                                        "id": "btn_" + ++id,
+                                        "name": "btn_" + id,
+                                        "type": "button",
+                                        "value": "View"}
+                                    );
                                     var view_url = "'http://localhost:"
                                         + status["webserver_port"] + "'";
                                     var view_cmd = "window.open(" + view_url + ")";
-                                    $(btn).attr("onClick", view_cmd);
-                                    $(btn).attr("title", "Open \""
-                                        + status["project_name"] + "\" (on "
-                                        + view_url + ")");
+                                    $(btn).attr({
+                                        "onClick": view_cmd,
+                                        "title": "Open \"" + status["project_name"]
+                                            + "\" (on " + view_url + ")"}
+                                    );
                                 }));
                                 $(td).append(make_el("input", [], function(btn){
-                                    $(btn).attr("id", "btn_" + ++id);
-                                    $(btn).attr("name", "btn_" + id);
-                                    $(btn).attr("type", "button");
-                                    $(btn).attr("value", "Code");
-                                    $(btn).click(function(){
+                                    $(btn).attr({
+                                        "id": "btn_" + ++id,
+                                        "name": "btn_" + id,
+                                        "type": "button",
+                                        "value": "Code"}
+                                    ).click(function(){
                                         open_code(status["project_directory"]);
                                     });
                                 }));
                                 $(td).append(make_el("input", [], function(btn){
-                                    $(btn).attr("id", "btn_" + ++id);
-                                    $(btn).attr("name", "btn_" + id);
-                                    $(btn).attr("type", "button");
-                                    $(btn).attr("value", "Run Command");
-                                    $(btn).click(function(){
+                                    $(btn).attr({
+                                        "id": "btn_" + ++id,
+                                        "name": "btn_" + id,
+                                        "type": "button",
+                                        "value": "Run Command"}
+                                    ).click(function(){
                                         open_shell(status["project_directory"]);
                                     });
                                 }));
@@ -423,6 +460,8 @@ function get_project_statuses(){
             };
         })
         .fail(function(jqXHR, error, ex){
-            alert("Unable to access project status data. Please try again.");
+            ok_dialog("Problem with project data",
+                "Unable to access project status data. Original problem: "
+                + ex);
         });
 };

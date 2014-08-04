@@ -17,6 +17,7 @@ class django {
 
   exec { 'sudo pip install -r requirements.txt':
     cwd => '/home/vagrant/src',
+    timeout => 0,
     require => [
       Package['python-pip'],
       File['/home/vagrant/src/requirements.txt'],
