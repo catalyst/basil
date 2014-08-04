@@ -1,0 +1,37 @@
+{
+  "template_version": "1.0",
+  "title": "Basic LAMP server",
+  "description": "A template for a basic LAMP server (Linux operating system, Apache web server, MySQL database, and PHP web pages).",
+  "fields": {
+    "db_name": {
+      "type": "text",
+      "title": "Database name",
+      "default": "test_db",
+      "description": "The name of the database to be created in MySQL.",
+      "validators": [
+        "identifier"
+      ]
+    },
+    "db_user": {
+      "type": "text",
+      "title": "Database user name",
+      "default": "test_user",
+      "description": "The name of the database user to be created for MySQL.",
+      "validators": [
+        "identifier"
+      ]
+    },
+    "db_password": {
+      "type": "text",
+      "title": "Database user password",
+      "default": "password",
+      "description": "The password of the database user to be created for MySQL.",
+      "validators": [
+        "identifier"
+      ]
+    }
+  },
+  "port_tags": [
+    "webserver_port"
+  ]
+}
