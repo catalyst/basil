@@ -149,7 +149,7 @@ function project_start(project_directory, project_name){
                     else if (response.state == command_progress_states.ERROR) {
                         $("#progress-summary").text("Error");
                         command_end();
-                        alert("Error occurred: " + command_progress.error);
+                        alert("Error occurred: " + response.error);
                     }
                     else {
                         //display progress e.g. messages (if change)
