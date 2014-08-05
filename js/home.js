@@ -7,7 +7,7 @@ jQuery(document).ready(function($){
         var option = $(this).find("option[value='" + template_name + "']");
         var template_title = option.attr("data-title");
         var template_description = option.attr("data-description");
-        $("#template-description").text(template_title
+        $("#template-description").html(template_title
             + ": " + template_description);
     });
     get_project_statuses();

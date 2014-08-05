@@ -376,16 +376,13 @@ function display_project_statuses(response){
                             case "Not Created":
                             case "Aborted":
                             case "Poweroff":
-                                // Start, Reset, Destroy
+                                // Start, Destroy
                                 id++;
                                 add_std_button(td, id, [], "Start",
                                     project_start, status);
                                 id++;
                                 add_std_button(td, id, ["float-right"],
                                     "Destroy", project_destroy, status);
-                                id++;
-                                add_std_button(td, id, ["float-right"],
-                                    "Reset", project_reset, status);
                                 break;
                             case "Running":
                                 // View, Code, Command, Stop, Reset, Destroy

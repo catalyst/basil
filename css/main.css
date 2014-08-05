@@ -54,6 +54,9 @@ td {
     vertical-align: top;
     padding: 8px;
 }
+a:hover, a:visited, a:link {
+    color: #2e8539;    
+}
 /* Progress */
 #progress {
     max-width: 600px;
@@ -95,12 +98,15 @@ td {
     overflow-y: scroll;
 }
 /* Template selection */
-#templates-form {
-    width: 400px;
-}
 #templates-dropdown {
     float: left;
-    width: 150px;
+    min-width: 100px;
+    max-width: 400px;
+}
+#apply-template {
+    margin-left: 20px;
+    float: left;
+    clear: none;
 }
 #template-description {
     max-width: 600px;
@@ -137,9 +143,6 @@ td {
     float: right;
     clear: both;
     margin-top: 10px;
-}
-#apply-template {
-    clear: none;
 }
 .fld-lbl {
     float: left;
