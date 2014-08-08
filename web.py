@@ -495,6 +495,11 @@ class BasilManagerHandler(http.server.BaseHTTPRequestHandler):
 
 
 def run_server():
+    try:
+        core.verify_vagrant_version()
+    except Exception as ex:
+        print(ex)
+        return
     port = 8000
     httpd = None
     while not httpd:

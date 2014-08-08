@@ -86,6 +86,8 @@ basil_bash_end = "#basil_bash_end #####"
 
 port_range_start = 45600
 
+min_vagrant = '1.4'
+
 my_platform = "my_platform"
 LINUX = "Linux"
 WINDOWS = "Windows"
@@ -125,6 +127,23 @@ def load_config(config_path):
             raise Exception("Unable to get config. Problem reading "
                 "JSON in \"{}\". Original error: {}".format(config_path, e))
     return config
+
+def verify_vagrant_version():
+    try:
+        version = subprocess.check_output(['vagrant', '--version'])
+        version_number = str(version).strip('\\n\'').split()[1]
+        for minimum, actual in zip(min_vagrant.split('.'),
+          version_number.split('.')):
+            if (actual < minimum):
+                raise Exception("Vagrant version must be at least {}. Version "
+                                "{} is currently installed".format(
+                        min_vagrant, version_number))
+    except:
+        raise Exception("Could not determine the version of Vagrant. Please "
+                        "ensure at least Vagrant {} is installed.".format(
+                min_vagrant))
+    return True
+
 
 def install_template(template_path):
     """
@@ -518,7 +537,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
        - details
        - error
     If an error, no need to update anything but state and error.
-    
+
     msg_transformer -- function to turn message string to friendlier version
 
     Don't include lines breaks in exception - only the first line is sent via
@@ -561,7 +580,7 @@ def execute_blocking_vagrant_cmd(command_list, project_directory,
                 command_progress.summary = summary;
                 command_progress.details += details + "\n"
             error = str(p.stderr.read(), "utf-8").strip()
-            if error:                
+            if error:
                 msg = None
                 error_transforms = [get_port_forwarded_collision_msg, ]
                 for error_transform in error_transforms:
