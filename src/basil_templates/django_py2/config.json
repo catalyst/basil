@@ -13,13 +13,31 @@
         "unique_python_module"
       ]
     },
-    "admin": {
+    "admin_username": {
       "type": "text",
-      "title": "Admin name",
+      "title": "Admin username",
       "default": "admin",
-      "description": "The name of the administrator of the Django project.",
+      "description": "The username for the administrative account of the Django project.",
       "validators": [
         "username"
+      ]
+    },
+    "admin_email": {
+      "type": "text",
+      "title": "Admin email",
+      "default": "admin@example.com",
+      "description": "The email address for the administrative account of the Django project.",
+      "validators": [
+        "email"
+      ]
+    },
+    "admin_password": {
+      "type": "text",
+      "title": "Admin password",
+      "default": "password",
+      "description": "The password for the administrative account of the Django project.",
+      "validators": [
+        "nonempty"
       ]
     }
   },

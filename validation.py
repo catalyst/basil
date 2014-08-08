@@ -24,3 +24,16 @@ def validate_directory(value):
     Returns True if value is a valid name for a directory.
     """
     return bool(re.search(r'^[A-z][A-z0-9_]+$', value))
+
+def validate_email(value):
+    """
+    Returns True if value is a valid email address.
+    Regex from: http://www.regular-expressions.info/email.html
+    """
+    return bool(re.search(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$', value, re.IGNORECASE))
+
+def validate_nonempty(value):
+    """
+    Returns True if value is not empty.
+    """
+    return bool(value)
