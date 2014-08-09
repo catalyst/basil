@@ -136,12 +136,11 @@ def verify_vagrant_version():
           version_number.split('.')):
             if (actual < minimum):
                 raise Exception("Vagrant version must be at least {}. Version "
-                                "{} is currently installed".format(
-                        min_vagrant, version_number))
+                    "{} is currently installed".format(min_vagrant,
+                    version_number))
     except:
         raise Exception("Could not determine the version of Vagrant. Please "
-                        "ensure at least Vagrant {} is installed.".format(
-                min_vagrant))
+            "ensure at least Vagrant {} is installed.".format(min_vagrant))
     return True
 
 
