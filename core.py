@@ -444,25 +444,7 @@ def missing_virtualbox(project_directory):
         missing = False
     return missing
 
-def get_project_status_via_vagrant(project_name, template_name,
-        template_version):
-    """
-    http://docs.vagrantup.com/v2/cli/machine-readable.html
-    Note - API not stabilised yet
-    """
-    project_directory = join(projects_dir, project_name)
-    try:
-        output = str(subprocess.check_output(["vagrant", "status",
-                "--machine-readable"], cwd=project_directory), "utf-8")
-    except FileNotFoundError as e:
-        raise Exception("Unable to get project status using vagrant. Is "
-            "vagrant installed on this machine?")
-    except Exception as e:
-        if missing_virtualbox(project_directory):
-            raise Exception("VirtualBox needs to be installed before you "
-                "can use Basil")
-        else:
-            raise
+def extract_status_dets(output):
     status_dict = {}
     for line in output.split("\n"):
         try:
@@ -476,6 +458,36 @@ def get_project_status_via_vagrant(project_name, template_name,
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_SHORT] = data
         elif msg_type == keys.VAGRANT_STATUS_STATE_HUMAN_LONG:
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG] = data
+    return status_dict
+
+def get_project_status_via_vagrant(project_name, template_name,
+        template_version):
+    """
+    http://docs.vagrantup.com/v2/cli/machine-readable.html
+    Note - API not stabilised yet, and vagrant 1.4 onwards only.
+
+    Fail hard if prerequisites for _any_ status checks are missing.
+
+    Return response in usual format if potentially a failure isolated to
+    a particular project. Use VAGRANT_STATUS_STATE_UNKNOWN.
+    """
+    project_directory = join(projects_dir, project_name)
+    try:
+        output = str(subprocess.check_output(["vagrant", "status",
+            "--machine-readable"], cwd=project_directory), "utf-8")
+    except FileNotFoundError as e:
+        raise Exception("Unable to get project status using vagrant. Is "
+            "vagrant installed on this machine?")
+    except Exception as e:
+        if missing_virtualbox(project_directory):
+            raise Exception("VirtualBox needs to be installed before you "
+                "can use Basil")
+        else:
+            return ProjectStatus(project_name, template_name,
+                template_version, keys.VAGRANT_STATUS_STATE_UNKNOWN,
+                "Unable to get status",
+                "Problem getting project status. {}".format(e), None)
+    status_dict = extract_status_dets(output)
     project_config = project_load_config(project_name)
     webserver_port = project_config[keys.PROJECT_PORTS].get(
         keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)

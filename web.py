@@ -508,7 +508,13 @@ def run_server():
         except:
             port += 1
     print("Basil server running on port: {}".format(port))
-    httpd.serve_forever()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n\n" + "*"*80 + "\n\nClosing down Basil"
+            "\n\nIf you inadvertantly left any projects open, open Basil again"
+            " and close them.\n\n")
+        return
 
 if __name__ == "__main__":
     run_server()

@@ -373,6 +373,8 @@ function display_project_statuses(response){
                     }));
                     $(tr).append(make_el("td", ["actions-col"], function(td){
                         switch(status["project_state"]){
+                            case "unknown":
+                                break;
                             case "Not Created":
                             case "Aborted":
                             case "Poweroff":
