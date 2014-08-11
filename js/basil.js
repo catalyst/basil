@@ -359,7 +359,7 @@ function display_project_statuses(response){
         $(table).append(make_el("tbody", [], function(tbody){
              var id = 0;
              _.each(response, function(status){
-                console.log(status);
+                //console.log(status);
                 $(tbody).append(make_el("tr", [], function(tr){
                     $(tr).append(make_el("td", ["projs-col"], function(td){
                         $(td).html("<span class='project-name'>"
