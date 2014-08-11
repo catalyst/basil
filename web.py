@@ -173,6 +173,7 @@ class GetStatuses(Request):
                             project_status.state, project_status.state_human_long)
                             .format(project_status.project_name),
                         "webserver_port": project_status.webserver_port,
+                        "allow_destroy": project_status.allow_destroy,
                     })
             else:
                 project_feedback = ""

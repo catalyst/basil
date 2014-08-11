@@ -33,6 +33,7 @@ PROJECT_TEMPLATE_NAME = "template_name"
 PROJECT_TEMPLATE_VERSION = "template_version"
 PROJECT_VALUES = "values"
 PROJECT_PORTS = "ports"
+PROJECT_ALLOW_DESTROY = "allow_destroy"
 
 PROJECT_BASE = "project_base"
 

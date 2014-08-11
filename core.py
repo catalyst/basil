@@ -66,11 +66,11 @@ Field = namedtuple('Field', ('name', 'type', 'title', 'description', 'default',
 # http://docs.vagrantup.com/v2/cli/machine-readable.html
 ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'template_name',
     'template_version', 'state', 'state_human_short', 'state_human_long',
-    'webserver_port'))
+    'webserver_port', 'allow_destroy'))
 
 # Project directory is an absolute path. We only want to store template_name
 ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
-    'template_version', 'ports'))
+    'template_version', 'ports', 'allow_destroy'))
 
 default_fields = [
     Field('project_name', 'text', 'Project name', 'The name of this project',
@@ -230,7 +230,7 @@ def get_ports(template_name):
     if keys.TEMPLATE_CONFIG_PORTS in config:
         port_tags = config[keys.TEMPLATE_CONFIG_PORTS]
         used_ports = []
-        for project in get_projects():
+        for project in get_project_infos():
             used_ports += project.ports.values()
         current_port = port_range_start
         for port_tag in port_tags:
@@ -395,7 +395,7 @@ def create(template_name, values):
         raise Exception("Unable to create project configuration file ({}) "
             "so project not created.".format(keys.BASIL_INTERNAL_CONFIG))
 
-def get_projects():
+def get_project_infos():
     """
     Returns a list of ProjectInfos for each project in projects_directory.
     When listing actions, always include the actions in default_actions.
@@ -409,9 +409,10 @@ def get_projects():
             template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
             template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
             ports = project_config[keys.PROJECT_PORTS]
-            template_config = template_load_config(template_name)
+            allow_destroy = project_config.get(keys.PROJECT_ALLOW_DESTROY,
+                True)
             project_infos.append(ProjectInfo(project_name, template_name,
-                template_version, ports)) # @Later - ensure anything expected ends up in the schema for testing config.json
+                template_version, ports, allow_destroy)) # @Later - ensure anything expected ends up in the schema for testing config.json
         except Exception as e:
             raise Exception("Unable to get project details for \"{}\" "
                 "project. {}".format(project_name, e))
@@ -421,7 +422,7 @@ def get_project_statuses():
     """
     Get project statuses.
     """
-    project_infos = get_projects()
+    project_infos = get_project_infos()
     project_statuses = []
     for project_info in project_infos:
         project_statuses.append(get_project_status(
@@ -486,18 +487,20 @@ def get_project_status_via_vagrant(project_name, template_name,
             return ProjectStatus(project_name, template_name,
                 template_version, keys.VAGRANT_STATUS_STATE_UNKNOWN,
                 "Unable to get status",
-                "Problem getting project status. {}".format(e), None)
+                "Problem getting project status. {}".format(e), None,
+                True)
     status_dict = extract_status_dets(output)
     project_config = project_load_config(project_name)
     webserver_port = project_config[keys.PROJECT_PORTS].get(
         keys.TEMPLATE_CONFIG_WEBSERVER_PORT, 8888)
+    allow_destroy = project_config.get(keys.PROJECT_ALLOW_DESTROY, True)
     try:
         project_status = ProjectStatus(project_name, template_name,
             template_version,
             status_dict[keys.VAGRANT_STATUS_STATE],
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_SHORT],
             status_dict[keys.VAGRANT_STATUS_STATE_HUMAN_LONG],
-            webserver_port)
+            webserver_port, allow_destroy)
     except KeyError as e:
         raise Exception("Unable to get project status for \"{}\"."
             "\nOriginal error: {}".format(project_directory, e))

@@ -359,6 +359,7 @@ function display_project_statuses(response){
         $(table).append(make_el("tbody", [], function(tbody){
              var id = 0;
              _.each(response, function(status){
+                console.log(status);
                 $(tbody).append(make_el("tr", [], function(tr){
                     $(tr).append(make_el("td", ["projs-col"], function(td){
                         $(td).html("<span class='project-name'>"
@@ -382,9 +383,11 @@ function display_project_statuses(response){
                                 id++;
                                 add_std_button(td, id, [], "Start",
                                     project_start, status);
-                                id++;
-                                add_std_button(td, id, ["float-right"],
-                                    "Destroy", project_destroy, status);
+                                if (status["allow_destroy"]){
+                                    id++;
+                                    add_std_button(td, id, ["float-right"],
+                                        "Destroy", project_destroy, status);
+                                }
                                 break;
                             case "Running":
                                 // View, Code, Command, Stop, Reset, Destroy
@@ -426,10 +429,12 @@ function display_project_statuses(response){
                                 }));
                                 id++;
                                 add_std_button(td, id, [], "Stop", project_stop,
-                                    status);
-                                id++;
-                                add_std_button(td, id, ["float-right"],
-                                    "Destroy", project_destroy, status);
+                                    status);                                    
+                                if (status["allow_destroy"]){
+                                    id++;
+                                    add_std_button(td, id, ["float-right"],
+                                        "Destroy", project_destroy, status);
+                                }  
                                 id++;
                                 add_std_button(td, id, ["float-right"],
                                     "Reset", project_reset, status);
