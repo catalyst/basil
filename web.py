@@ -86,6 +86,7 @@ def get_getvars(handler):
     else:
         return {}
 
+
 class Request(object):
 
     def __init__(self, handler):
@@ -364,7 +365,8 @@ class CreateProject(Request):
             if key != keys.TEMPLATE}
         try:
             core.create(template_name, values)
-            message = '"{}" successfully created.'.format(project_name)
+            message = ('Your "{}" project has been created. Click the Start '
+                'button to open it.'.format(project_name))
         except Exception as e:
             message = ("Was unable to create \"{}\" project.<br>"
                 "Original error: {}".format(project_name, e))
