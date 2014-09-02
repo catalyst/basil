@@ -75,6 +75,16 @@ def get_postvars(handler):
         for key, val_list in b_postvars.items()}
     return postvars
 
+def get_getvars(handler):
+    """
+    Returns dict of get variables. The vals are lists (usually of just
+    one item).
+    """
+    url_parts = handler.path.split('?')
+    if len(url_parts) >= 2:
+        return urllib.parse.parse_qs(url_parts[1])
+    else:
+        return {}
 
 class Request(object):
 
@@ -83,6 +93,12 @@ class Request(object):
         self.response = 200
         self.response_msg = ""
         self.headers = {}
+
+    def get_postvars(self):
+        return get_postvars(self.handler)
+
+    def get_getvars(self):
+        return get_getvars(self.handler)
 
     def execute(self):
         """
@@ -122,6 +138,13 @@ class Page(Request):
         return ''
 
     def render(self):
+        message = self.get_getvars().get('msg')
+        if message:
+            alert = """
+            <div class="alert">{message}</div>""".format(message=message[0])
+        else:
+            alert = ""
+
         content = """
         <html>
           <head>
@@ -130,17 +153,16 @@ class Page(Request):
             {head}
           </head>
           <body>
+            {alert}
             <a href="/" title="Home page">
                 <image id="basil-logo" src="images/basil_logo.png">
             </a>
             {body}
           </body>
         </html>
-        """.format(title=self.title(), head = self.head(), body=self.body())
+        """.format(alert=alert, title=self.title(), head = self.head(),
+        body=self.body())
         return content.encode('utf-8')
-
-    def get_postvars(self):
-        return get_postvars(self.handler)
 
     def execute(self):
         super(Page, self).execute()
@@ -330,12 +352,9 @@ class HomePage(Page):
         return html
 
 
-class CreateProject(Page):
+class CreateProject(Request):
 
-    def title(self):
-        return 'Project being built ...'
-
-    def body(self):
+    def execute(self):
         global command_progress
         postvars = self.get_postvars()
         template_name = postvars[keys.TEMPLATE][0]
@@ -345,17 +364,14 @@ class CreateProject(Page):
             if key != keys.TEMPLATE}
         try:
             core.create(template_name, values)
+            message = '"{}" successfully created.'.format(project_name)
         except Exception as e:
-            return ("Was unable to create \"{}\" project.<br>"
+            message = ("Was unable to create \"{}\" project.<br>"
                 "Original error: {}".format(project_name, e))
-        return """
-            <h1>Success!</h1>
-
-            <p class="instructions">Your "{project_name}" project was
-            successfully configured.</p>
-
-            <p>Return to <a href='/'>Home Page</a> to work with your
-            "{project_name}" project.</p>""".format(project_name=project_name)
+        self.response = 302
+        # @TODO: Use a session instead of a query string for the message.
+        self.headers['Location'] = '/?msg=' + message
+        super(CreateProject, self).execute()
 
 
 class GetValues(Page):
