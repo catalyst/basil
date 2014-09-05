@@ -143,7 +143,7 @@ class Page(Request):
         alert = ''
         for message in messages:
             alert += '<div class="alert">{message}</div>'.format(message=message)
-        messages = []
+        del messages[:]
 
         content = """
         <html>
