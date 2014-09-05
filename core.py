@@ -34,7 +34,7 @@ Once a template has made a project, it has no further connection to that
 project.
 """
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from enum import Enum
 import fileinput
 from functools import partial
@@ -187,7 +187,8 @@ def get_fields(template_name):
     from templates.
     """
     config = template_load_config(template_name)
-    fields = { field.name: field for field in default_fields }
+    fields = OrderedDict({ field.name: field for field in default_fields })
+    # @TODO We want there to be a determined order for fields.
     for field_name, field in config[keys.TEMPLATE_CONFIG_FIELDS].items():
         fields[field_name] = (Field(field_name,
             field[keys.TEMPLATE_FIELD_TYPE],
