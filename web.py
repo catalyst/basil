@@ -35,6 +35,8 @@ import core
 import keys
 import settings
 
+messages = []
+
 projects_dir = settings.projects_dir
 
 basil_config_file = 'basil.json'
@@ -85,7 +87,6 @@ def get_getvars(handler):
         return urllib.parse.parse_qs(url_parts[1])
     else:
         return {}
-
 
 class Request(object):
 
@@ -139,12 +140,10 @@ class Page(Request):
         return ''
 
     def render(self):
-        message = self.get_getvars().get('msg')
-        if message:
-            alert = """
-            <div class="alert">{message}</div>""".format(message=message[0])
-        else:
-            alert = ""
+        alert = ''
+        for message in messages:
+            alert += '<div class="alert">{message}</div>'.format(message=message)
+        messages = []
 
         content = """
         <html>
@@ -372,7 +371,8 @@ class CreateProject(Request):
                 "Original error: {}".format(project_name, e))
         self.response = 302
         # @TODO: Use a session instead of a query string for the message.
-        self.headers['Location'] = '/?msg=' + message
+        self.headers['Location'] = '/'
+        messages.append(message)
         super(CreateProject, self).execute()
 
 
