@@ -693,6 +693,10 @@ def start_project(project_directory):
     """
     Open project - vagrant up.
     """
+
+    print(project_directory)
+
+    
     command_progress = run_vagrant_cmd(command_list=["vagrant", "up"],
         project_directory=project_directory, blocking=False,
         msg_transformer=start_msg_transformer)

@@ -71,6 +71,7 @@ function project_action(project_directory, project_name, url,
     $("body").css("cursor", "progress");
     $.ajax({type: "POST",
             url: url,
+            dataType: "json",
             data: {
                 "project_directory": project_directory
             }
@@ -117,7 +118,7 @@ function show_progress(project_name, n_expected_msgs, action_lbl_doing,
         + "<div id='progress-bar'></div>"
         + "<div id='progress-summary'>" + action_lbl_doing_cap + " ...</div>"
         + "<div id='details-block'>"
-            + "<img id='details-arrow' src='images/show_arrow.png'>"
+            + "<img id='details-arrow' src='static/images/show_arrow.png'>"
             + "<div id='details-lbl'>Details</div>"
             + "<div class='clear-both'></div>"
         + "</div>"
@@ -128,10 +129,10 @@ function show_progress(project_name, n_expected_msgs, action_lbl_doing,
     $("#details-arrow").click(function(){
         if(show){
             $("#progress-details").show();
-            $("#details-arrow").attr("src", "images/hide_arrow.png");
+            $("#details-arrow").attr("src", "static/images/hide_arrow.png");
         } else {
             $("#progress-details").hide();
-            $("#details-arrow").attr("src", "images/show_arrow.png");
+            $("#details-arrow").attr("src", "static/images/show_arrow.png");
         }
         show = !show;
     });    /* poll recursively with pauses at client end. Warning - alternative approach
@@ -153,6 +154,7 @@ function show_progress(project_name, n_expected_msgs, action_lbl_doing,
     }
     function get_progress() {
         $.ajax({type: "GET",
+                dataType: "json",
                 async: false,
                 url: "get-command-progress"
             })
@@ -452,7 +454,7 @@ function get_project_statuses(){
     Can't accept arguments - otherwise messes up setInterval.
     */
     $("body").css("cursor", "progress");
-    $.ajax({type: "GET", url: "get-statuses"})
+    $.ajax({type: "GET", url: "get-statuses", dataType: "json"})
         .done(function(response){
             if(response != ""){
                 display_project_statuses(response);
