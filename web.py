@@ -29,6 +29,8 @@ import core
 import keys
 import settings
 
+messages = []
+
 projects_dir = settings.projects_dir
 
 basil_config_file = 'basil.json'
