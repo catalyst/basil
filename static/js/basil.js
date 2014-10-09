@@ -373,7 +373,7 @@ function display_project_statuses(response){
                     $(tr).append(make_el("td", ["status-col"], function(td){
                         $(td).html("<strong>" + status["project_state"]
                             + "</strong> - " + status["project_state_msg"]);
-                    }));
+                    }))
                     $(tr).append(make_el("td", ["actions-col"], function(td){
                         switch(status["project_state"]){
                             case "unknown":
@@ -454,7 +454,9 @@ function get_project_statuses(){
     Can't accept arguments - otherwise messes up setInterval.
     */
     $("body").css("cursor", "progress");
-    $.ajax({type: "GET", url: "get-statuses", dataType: "json"})
+    $.ajax({type: "GET", 
+        url: "get-statuses", 
+        dataType: "json"})
         .done(function(response){
             if(response != ""){
                 display_project_statuses(response);
@@ -465,9 +467,11 @@ function get_project_statuses(){
                 $("body").css("cursor", "default");
             };
         })
-        .fail(function(jqXHR, error, ex){
+        .fail(function(jqXHR, textStatus, errorThrown){
             ok_dialog("Problem with project data",
                 "Unable to access project status data. Original problem: "
-                + ex);
+                + jqXHR.responseText);
+            $("#loading-projects").text("Problem accessing projects information. " 
+                + jqXHR.responseText);
         });
 };

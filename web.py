@@ -22,6 +22,7 @@ BasilManagerHandler.__init__ does url handler config
 import json
 import os
 from os.path import join
+import sys
 
 import bottle
 
@@ -68,6 +69,10 @@ def server_static(filepath):
     return bottle.static_file(filepath,
         root='{}/static'.format(static_path))
 
+@bottle.error(500)
+def error500(error): # don't want the default page
+    return error.exception
+
 @bottle.route('/get-statuses')
 def get_statuses():
     try:
@@ -96,10 +101,11 @@ def get_statuses():
         msg = str(e)
         if not msg:
             msg = "Unknown error"
-        # TODO - do something bottle-ish
-        project_feedback = {"Success": "False", "Error": str(e)}
-    payload = json.dumps(project_feedback).encode("utf-8")
-    return payload
+        # can grab msg at AJAX jQuery end as jqXHR.responseText
+        return bottle.HTTPError(status=500, exception=msg)
+    else:
+        payload = json.dumps(project_feedback).encode("utf-8")
+        return payload
 
 def get_reply_payload(func, args):
     global command_progress
@@ -113,32 +119,32 @@ def get_reply_payload(func, args):
         command_progress.state = keys.CommandProgressStates.ERROR
     return json.dumps(reply_payload).encode("utf-8")
 
-@bottle.route('/project-start', method="POST")
+@bottle.post('/project-start')
 def project_start():
     return get_reply_payload(func=core.start_project,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
 
-@bottle.route('/project-stop', method="POST")
+@bottle.post('/project-stop')
 def project_stop():
     return get_reply_payload(func=core.stop_project,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
 
-@bottle.route('/project-reset', method="POST")
+@bottle.post('/project-reset')
 def project_stop():
     return get_reply_payload(func=core.reset_project,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
 
-@bottle.route('/project-destroy', method="POST")
+@bottle.post('/project-destroy')
 def project_stop():
     return get_reply_payload(func=core.destroy_project,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
 
-@bottle.route('/open-code', method="POST")
+@bottle.post('/open-code')
 def project_stop():
     return get_reply_payload(func=core.open_code,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
 
-@bottle.route('/open-shell', method="POST")
+@bottle.post('/open-shell')
 def project_stop():
     return get_reply_payload(func=core.open_shell,
         args=[bottle.request.forms.get(keys.PROJECT_DIRECTORY)])
@@ -152,7 +158,7 @@ def get_command_progress():
             "Orig error: {}".format(e))
     return payload
       
-@bottle.route('/create-project', method="POST")
+@bottle.post('/create-project')
 def create():
     basil_template = bottle.request.forms.get(keys.TEMPLATE)
     project_name = bottle.request.forms.get(keys.PROJECT_NAME)
@@ -171,15 +177,14 @@ def run_server():
     while True:
         try:
             bottle.run(host='localhost', port=port, debug=debug, reloader=debug)
-            print("Basil server running on port: {}".format(port))
             break
-        except KeyboardInterrupt:
-            print("\n\n" + "*"*80 + "\n\nClosing down Basil"
-                "\n\nIf you inadvertantly left any projects open, open Basil again"
-                " and close them.\n\n")
-            return
         except Exception:
             port += 1
+    print("\n\n" + "*"*50 + "\n\nClosing down Basil ..."
+        "\n\nIf you inadvertantly left any projects open,\nreopen Basil"
+        " and close them.\n\n" + "*"*50)
+    if debug:
+        print("Note - please close again - reloader is currently set to True")
 
 if __name__ == "__main__":
     run_server()
