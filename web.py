@@ -69,6 +69,25 @@ def server_static(filepath):
     return bottle.static_file(filepath,
         root='{}/static'.format(static_path))
 
+@bottle.get('/get-fields')
+def get_template_fields():
+    template_name = bottle.request.GET.get(keys.PROJECT_TEMPLATE_NAME)
+    fields = core.get_fields(template_name)
+    return json.dumps(fields)
+    
+@bottle.post('/create-project')
+def create_project():
+    template_name = bottle.request.forms.get(keys.PROJECT_TEMPLATE_NAME)
+    values = {item: bottle.request.forms[item] for item in bottle.request.forms}
+    del values[keys.PROJECT_TEMPLATE_NAME]
+    try:
+        core.create(template_name, values)
+    except Exception as e:
+        msg = "Failed to make project. Orig error: {}".format(e)
+        return bottle.HTTPError(status=500, exception=msg)
+    return json.dumps("Successfully created project \"{}\""
+        .format(values[keys.PROJECT_NAME]))
+
 @bottle.error(500)
 def error500(error): # don't want the default page
     return error.exception
@@ -157,15 +176,7 @@ def get_command_progress():
         payload = ("Unable to read progress details from object. "
             "Orig error: {}".format(e))
     return payload
-      
-@bottle.post('/create-project')
-def create():
-    basil_template = bottle.request.forms.get(keys.TEMPLATE)
-    project_name = bottle.request.forms.get(keys.PROJECT_NAME)
-    return bottle.template("Once wired up will create project {{project_name}} "
-        "with {{basil_template}}", project_name=project_name,
-        basil_template=basil_template)
-    
+
 def run_server():
     debug = True
     try:

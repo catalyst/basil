@@ -72,10 +72,15 @@ ProjectStatus = namedtuple('ProjectStatus', ('project_name', 'template_name',
 ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
     'template_version', 'ports', 'allow_destroy'))
 
-default_fields = [
-    Field('project_name', 'text', 'Project name', 'The name of this project',
-        '', [ 'directory' ]),
-]
+default_fields = {
+    'project_name': { # make field names dict keys so easy to override
+         keys.TEMPLATE_FIELD_TYPE: 'text',
+         keys.TEMPLATE_FIELD_TITLE: 'Project name',
+         keys.TEMPLATE_FIELD_DESCRIPTION: 'The name of this project',
+         keys.TEMPLATE_FIELD_DEFAULT: '',
+         keys.TEMPLATE_FIELD_VALIDATORS: [ 'directory' ],
+         },
+}
 
 OpenCommand = namedtuple("OpenCommand", ("cmd_bits", "lbl"))
 
@@ -187,22 +192,15 @@ def get_fields(template_name):
     from templates.
     """
     config = template_load_config(template_name)
-    fields = { field.name: field for field in default_fields }
-    for field_name, field in config[keys.TEMPLATE_CONFIG_FIELDS].items():
-        fields[field_name] = (Field(field_name,
-            field[keys.TEMPLATE_FIELD_TYPE],
-            field[keys.TEMPLATE_FIELD_TITLE],
-            field[keys.TEMPLATE_FIELD_DESCRIPTION],
-            field[keys.TEMPLATE_FIELD_DEFAULT],
-            field[keys.TEMPLATE_FIELD_VALIDATORS]))
-    return list(fields.values())
+    fields = default_fields.copy()
+    fields.update(config[keys.TEMPLATE_CONFIG_FIELDS])
+    return fields
 
 def get_default_field_validators(field_name):
     """
     Raises exception if can't find in default fields.
     """
-    field_name2validators = {x.name: x.validators for x in default_fields}
-    return field_name2validators[field_name]
+    return default_fields[field_name][keys.TEMPLATE_FIELD_VALIDATORS]
 
 def get_ports(template_name):
     """
@@ -350,6 +348,8 @@ def create(template_name, values):
     * "Fill in the blanks" of the new project directory with values.
     * Place a '.basil' json file in the project, containing values, the template name, and an initial state?
     """
+    #print(template_name)
+    #print(values)
     # testing
     skip_creation = False
     if skip_creation:
