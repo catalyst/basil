@@ -139,11 +139,13 @@ function build_create_dialog(template_name, response){
     }));
     fieldnames = [];
     for (var fieldname in response){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
-        if (response.hasOwnProperty(fieldname)) {
+        if (response.hasOwnProperty(fieldname) && (fieldname != "project_name")) {
             fieldnames.push(fieldname);
         }
     };
     fieldnames.sort();
+    fieldnames.unshift("project_name");
+    console.log(fieldnames);
     _.each(fieldnames, function(fieldname){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
         var field_det = response[fieldname];
         var title = field_det.title;
@@ -167,6 +169,7 @@ function build_create_dialog(template_name, response){
         $(time_span).attr("id", "time-warning");
     }));
     dialog_div.dialog({
+        title: "Create Project",
         autoOpen: false,
         height: "auto",
         width: 450,
