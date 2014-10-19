@@ -16,13 +16,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-ACTION_OPEN = "open" # vagrant up + open start page
-ACTION_EDIT = "edit" # files in shared folder
-ACTION_SSH = "ssh"
-ACTION_HALT = "halt"
-ACTION_DESTROY = "destroy"
-ACTIONS = [ACTION_OPEN, ACTION_EDIT, ACTION_SSH, ACTION_HALT, ACTION_DESTROY]
-
 TEMPLATE = "template"
 
 # POST vars
@@ -48,6 +41,7 @@ TEMPLATE_CONFIG_PROCESS = "process"
 TEMPLATE_CONFIG_PORTS = "port_tags"
 TEMPLATE_CONFIG_WEBSERVER_PORT = "webserver_port"
 
+TEMPLATE_FIELD_NAME = "field_name"
 TEMPLATE_FIELD_TITLE = "title"
 TEMPLATE_FIELD_DESCRIPTION = "description"
 TEMPLATE_FIELD_TYPE = "type"
