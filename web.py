@@ -310,8 +310,7 @@ class HomePage(Page):
         head = """<link rel="stylesheet" href="css/jquery-ui.min.css">"""
         head += super(HomePage, self).head() # we want main.css to override other css
         head += """
-        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="js/basil.js"></script>
+        <script type="text/javascript" src="js/jquery-ui.min.js"></script>        <script type="text/javascript" src="js/basil.js"></script>
         <script type="text/javascript" src="js/home.js"></script>
         """
         return head
