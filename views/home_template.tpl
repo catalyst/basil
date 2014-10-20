@@ -19,20 +19,20 @@
         <p class="instructions">Choose a template to base your new
             project on.</p>
         <div id="templates-form">
-        <form action="/get-values" method="POST">
-        <span class="fld-lbl">Available templates:</span>
-        <select name="{{template_dropdown}}" class="dropdown"
-            id="templates-dropdown">
-            %for template_info in template_infos:
-                <option value="{{template_info.name}}"
-                    data-title="{{template_info.title}}"
-                    data-description="{{template_info.description}}">
-                        {{template_info.title}}
-                </option>
-            %end       
-        </select>
-        <input id="apply-button" type="submit" value="APPLY">
-        </form>
+            <form action="/get-values" method="POST">
+                <span class="fld-lbl">Available templates:</span>
+                <select name="{{template_dropdown}}" class="dropdown"
+                    id="templates-dropdown">
+                    %for template_info in template_infos:
+                        <option value="{{template_info.name}}"
+                            data-title="{{template_info.title}}"
+                            data-description="{{template_info.description}}">
+                                {{template_info.title}}
+                        </option>
+                    %end       
+                </select>
+                <input id="apply-button" value="APPLY" type=button>
+            </form>
         </div>
         <p id="template-description"></p>
         <h2>Manage existing projects</h2>
@@ -41,7 +41,6 @@
         <p id="loading-projects" class=\"instructions\">
         Loading projects status details ...</p>
         </div>
-        <div id="dialog" title="Destroy Project" style="display: none;">
-        </div>
+        <div id="gen-dialog" title="General dialog" style="display: none;"></div>
     </body>
 </html>

@@ -15,6 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+
 function make_el(el_type, classes, fn_or_val){
     /*
     Make an html element e.g. select, option. Apply classes to element.
@@ -60,6 +61,150 @@ function make_el(el_type, classes, fn_or_val){
         }
     };
     return el;
+};
+
+// http://stackoverflow.com/questions/1184624/convert-form-data-to-js-object-with-jquery
+$.fn.serializeObject = function()
+{
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name] !== undefined) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else {
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+
+function setup_template_form(){
+    $(function(){
+        $("#templates-dropdown").trigger('change');
+    });
+    $("#templates-dropdown").change(function(){
+        var template_name = $(this).val();
+        var option = $(this).find("option[value='" + template_name + "']");
+        var template_title = option.attr("data-title");
+        var template_description = option.attr("data-description");
+        $("#template-description").html(template_title
+            + ": " + template_description);
+    });
+    $("#apply-button").attr({
+        "title": "Create project based on template"}
+    ).click(function(){
+        open_create_project();
+    });
+}
+
+function create_project(){
+    var template_name = $("#templates-dropdown").find('option:selected').val();
+    var create_data = $("#create_form").serializeObject();
+    create_data["template_name"] = template_name;
+    $.ajax({type: "POST",
+            url: "create-project",
+            dataType: "json",
+            data: create_data
+        })
+        .done(function(response){
+            ok_dialog("Success", "Successfully made \"" 
+                + create_data.project_name + "\"");
+            get_project_statuses();
+        })
+        .fail(function(jqXHR, textStatus, errorThrown){
+            var title = "Problem making project";
+            var msg = "Problem making \"" + create_data.project_name 
+                + "\" project.<br><br>" + jqXHR.responseText;
+            ok_dialog(title, msg);
+        });
+};
+
+function build_create_dialog(template_name, response){
+    /*
+    TODO - handle validation side of things from user point of view and stopping submission of faulty data
+    (client side is enough - the user can feel free to destroy their own system through hacking ;-))
+    */
+    dialog_div = $("#gen-dialog");
+    var i = 0;
+    dialog_div.append(make_el("form", [], function(form){
+        $(form).attr("id", "create_form");
+    }));
+    var form = $("#create_form");
+    form.append(make_el("p", ["instructions"], function(p){
+        $(p).html("Configure your <span class='tpl-name'>" + template_name 
+            + "</span> project by answering the following questions:");
+    }));
+    fieldnames = [];
+    for (var fieldname in response){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
+        if (response.hasOwnProperty(fieldname) && (fieldname != "project_name")) {
+            fieldnames.push(fieldname);
+        }
+    };
+    fieldnames.sort();
+    fieldnames.unshift("project_name");
+    console.log(fieldnames);
+    _.each(fieldnames, function(fieldname){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
+        var field_det = response[fieldname];
+        var title = field_det.title;
+        var description = field_det.description;
+        var type = field_det.type;
+        var field_default = field_det.default;
+        var validators = field_det.validators; // TODO wire up front-end validation - see http://jqueryui.com/dialog/#modal-form
+        form.append(make_el("label", ["dialog-label"], function(label){
+            $(label).text(title + ":");
+            $(label).attr("for", fieldname)
+        }));
+        form.append(make_el("input", ['dialog-input', 'text', 'ui-widget-content', 'ui-corner-all'], function(text){
+            $(text).attr({"id": fieldname, "name": fieldname, "value": field_default}) // must define name so serialize will work
+        }));
+    });
+    form.append(make_el("span", [], function(time_span){
+        $(time_span).text("Note: building your project and applying the configuration "
+            + "may take anything from a few minutes to 20 minutes. It depends on "
+            + "whether you already have a particular (vagrant) file downloaded "
+            + "already or not.");
+        $(time_span).attr("id", "time-warning");
+    }));
+    dialog_div.dialog({
+        title: "Create Project",
+        autoOpen: false,
+        height: "auto",
+        width: 450,
+        modal: true,
+        dialogClass: "no-close",
+        buttons: {
+            "Create a project": create_project,
+            Cancel: function() {
+                dialog_div.dialog("close");
+        }
+    },
+    close: function() {
+            form.remove();
+        }
+    });
+    return dialog_div;
+};
+
+function open_create_project(){
+    var template_name = $("#templates-dropdown").find('option:selected').val();
+    $.ajax({type: "GET",
+            url: "get-fields",
+            dataType: "json",
+            data: {"template_name": template_name}
+        })
+        .done(function(response){
+            dialog_div = build_create_dialog(template_name, response);
+            dialog_div.dialog("open");
+        })
+        .fail(function(jqXHR, error, ex){
+            var title = "Problem getting field details for template";
+            var msg = "Problem getting field details for \"" + template_name 
+                + "\" template.<br><br>" + ex;
+            ok_dialog(title, msg);
+        });
 };
 
 function project_action(project_directory, project_name, url,
@@ -233,14 +378,16 @@ function project_reset(project_directory, project_name){
         get_project_statuses, enable_all_btns);
     show_progress(project_name, 10, "resetting", "Resetting");
 };
-
+    
 function confirm_destroy(project_directory, project_name) {
-    $("#dialog").html("<p>Destroying your project is irreversible. "
+    var dialog_div = $("#gen-dialog");
+    dialog_div.html("<p>Destroying your project is irreversible. "
         + "Do you really want to destroy it?</p>");
-    $("#dialog").dialog({
+    dialog_div.dialog({
         title: "Destroy " + project_name + " project?",
         autoOpen: false,
         width: 400,
+        modal: true,
         dialogClass: "no-close",
         buttons: [
 	        {
@@ -261,7 +408,7 @@ function confirm_destroy(project_directory, project_name) {
 	        }
         ]
     });
-    $("#dialog").dialog("open");
+    dialog_div.dialog("open");
 };
 
 function project_destroy(project_directory, project_name){
@@ -269,36 +416,42 @@ function project_destroy(project_directory, project_name){
 };
 
 function ok_dialog(title, msg){
-    $("#dialog").html("<p>" + msg + "</p>");
+    var dialog_div = $("#gen-dialog");
+    dialog_div.html("<p>" + msg + "</p>");
     if (msg.length < 200){
         var width = 400;
+        var height = 200;
     } else {
         var width = 700;
+        var height = "auto";
     };
-    $("#dialog").dialog({
+    dialog_div.dialog({
         title: title,
         autoOpen: false,
         width: width,
+        height: height,
+        modal: true,
         dialogClass: "no-close",
         buttons: [
 	        {
 		        text: "OK",
 		        click: function() {
 			        $( this ).dialog("close");
+			        dialog_div.html("");
 		        }
 	        }
         ]
     });
-    $("#dialog").dialog("open");
+    dialog_div.dialog("open");
 };
 
 function disable_all_btns(){
-    $("input[type=button]").attr("disabled", "disabled");
+    $("input.action_button[type=button]").attr("disabled", "disabled");
 };
 
 function enable_all_btns(){
     /* As a common success/fail handler good to guarantee hourglass off */
-    $("input[type=button]").removeAttr("disabled");
+    $("input.action_button[type=button]").removeAttr("disabled");
     $("body").css("cursor", "default");
 };
 
@@ -373,7 +526,7 @@ function display_project_statuses(response){
                     $(tr).append(make_el("td", ["status-col"], function(td){
                         $(td).html("<strong>" + status["project_state"]
                             + "</strong> - " + status["project_state_msg"]);
-                    }));
+                    }))
                     $(tr).append(make_el("td", ["actions-col"], function(td){
                         switch(status["project_state"]){
                             case "unknown":
@@ -383,17 +536,17 @@ function display_project_statuses(response){
                             case "Poweroff":
                                 // Start, Destroy
                                 id++;
-                                add_std_button(td, id, [], "Start",
+                                add_std_button(td, id, ["action_button"], "Start",
                                     project_start, status);
                                 if (status["allow_destroy"]){
                                     id++;
-                                    add_std_button(td, id, ["float-right"],
+                                    add_std_button(td, id, ["float-right", "action_button"],
                                         "Destroy", project_destroy, status);
                                 }
                                 break;
                             case "Running":
                                 // View, Code, Command, Stop, Reset, Destroy
-                                $(td).append(make_el("input", [], function(btn){
+                                $(td).append(make_el("input", ["action_button"], function(btn){
                                     $(btn).attr({
                                         "id": "btn_" + ++id,
                                         "name": "btn_" + id,
@@ -409,7 +562,7 @@ function display_project_statuses(response){
                                             + "\" (on " + view_url + ")"}
                                     );
                                 }));
-                                $(td).append(make_el("input", [], function(btn){
+                                $(td).append(make_el("input", ["action_button"], function(btn){
                                     $(btn).attr({
                                         "id": "btn_" + ++id,
                                         "name": "btn_" + id,
@@ -419,7 +572,7 @@ function display_project_statuses(response){
                                         open_code(status["project_directory"]);
                                     });
                                 }));
-                                $(td).append(make_el("input", [], function(btn){
+                                $(td).append(make_el("input", ["action_button"], function(btn){
                                     $(btn).attr({
                                         "id": "btn_" + ++id,
                                         "name": "btn_" + id,
@@ -430,15 +583,15 @@ function display_project_statuses(response){
                                     });
                                 }));
                                 id++;
-                                add_std_button(td, id, [], "Stop", project_stop,
+                                add_std_button(td, id, ["action_button"], "Stop", project_stop,
                                     status);                                    
                                 if (status["allow_destroy"]){
                                     id++;
-                                    add_std_button(td, id, ["float-right"],
+                                    add_std_button(td, id, ["float-right", "action_button"],
                                         "Destroy", project_destroy, status);
                                 }  
                                 id++;
-                                add_std_button(td, id, ["float-right"],
+                                add_std_button(td, id, ["float-right", "action_button"],
                                     "Reset", project_reset, status);
                                 break;
                          };
@@ -454,7 +607,9 @@ function get_project_statuses(){
     Can't accept arguments - otherwise messes up setInterval.
     */
     $("body").css("cursor", "progress");
-    $.ajax({type: "GET", url: "get-statuses", dataType: "json"})
+    $.ajax({type: "GET", 
+        url: "get-statuses", 
+        dataType: "json"})
         .done(function(response){
             if(response != ""){
                 display_project_statuses(response);
@@ -465,9 +620,11 @@ function get_project_statuses(){
                 $("body").css("cursor", "default");
             };
         })
-        .fail(function(jqXHR, error, ex){
+        .fail(function(jqXHR, textStatus, errorThrown){
             ok_dialog("Problem with project data",
                 "Unable to access project status data. Original problem: "
-                + ex);
+                + jqXHR.responseText);
+            $("#loading-projects").text("Problem accessing projects information. " 
+                + jqXHR.responseText);
         });
 };

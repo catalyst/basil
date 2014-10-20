@@ -179,7 +179,6 @@ a:hover, a:visited, a:link {
 #time-warning {
     font-size: 11px;
     padding-top: 10px;
-    width: 300px;
     float: left;
 }
 #basil-logo {
@@ -188,6 +187,14 @@ a:hover, a:visited, a:link {
 }
 .float-right {
     float: right;
+}
+.dialog-label {
+    float: left;
+    clear: both;
+}
+.dialog-input {
+    float: right;
+    margin-bottom: 6px;
 }
 /* jQuery UI **************************************************************** */
 .no-close .ui-dialog-titlebar-close {
