@@ -1,0 +1,9 @@
+{
+  "template_version": "1.0",
+  "title": "node.js v0.10.32",
+  "description": "node.js template",
+  "fields": {},
+  "port_tags": [
+    "webserver_port"
+  ]
+}
