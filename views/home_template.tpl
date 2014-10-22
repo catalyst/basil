@@ -31,7 +31,7 @@
                         </option>
                     %end       
                 </select>
-                <input id="apply-button" value="APPLY" type=button>
+                <input id="apply-button" value="CREATE" type=button>
             </form>
         </div>
         <p id="template-description"></p>
