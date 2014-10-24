@@ -181,6 +181,7 @@ def get_templates():
             template_config[keys.TEMPLATE_CONFIG_TITLE],
             template_config[keys.TEMPLATE_CONFIG_DESCRIPTION],
             template_config[keys.TEMPLATE_CONFIG_TEMPLATE_VERSION]))
+    template_infos.sort(key=lambda s: s.title)
     return template_infos
 
 def get_fields(template_name):
