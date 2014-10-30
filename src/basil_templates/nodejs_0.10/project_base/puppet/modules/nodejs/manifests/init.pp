@@ -23,9 +23,9 @@ class nodejs {
     require => Exec['nodesource'],
   }
 
-  exec { 'supervisor':
-    command => 'npm install supervisor -g',
-    creates => '/usr/bin/supervisor',
+  exec { 'forever':
+    command => 'npm install forever -g',
+    creates => '/usr/bin/forever',
     path    => [ '/usr/bin'],
     require => Package['nodejs']
   }
@@ -43,7 +43,7 @@ class nodejs {
   exec { 'service nodeapp restart':
     require => [
       File['/etc/init/nodeapp.conf'],
-      Exec['supervisor'],
+      Exec['forever'],
     ],
     path => [ '/usr/bin', '/usr/sbin', '/sbin' ],
   }
