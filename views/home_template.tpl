@@ -2,6 +2,7 @@
     <head>
         <meta charset="UTF-8">
         <title>{{title}}</title>
+        <link rel="icon" href="static/images/favicon.png">
         <link rel="stylesheet" href="static/css/jquery-ui.min.css">
         <link rel="stylesheet" href="static/css/main.css">
         <script type="text/javascript" src="static/js/jquery.min.js"></script>
@@ -29,7 +30,7 @@
                             data-description="{{template_info.description}}">
                                 {{template_info.title}}
                         </option>
-                    %end       
+                    %end
                 </select>
                 <input id="apply-button" value="CREATE" type=button>
             </form>
