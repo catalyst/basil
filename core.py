@@ -393,7 +393,11 @@ def create(template_name, values):
     # Rewrite/rename files (replacing basil tags).
     rewrite_values = values.copy()
     rewrite_values.update(ports)
-    populate_templates(project_directory, rewrite_values)
+    try:
+        populate_templates(project_directory, rewrite_values)
+    except Exception as e:
+        shutil.rmtree(project_directory)
+        raise e
     # Create internal basil config file (.basil)
     try:
         create_project_config(template_name, values, ports, project_directory)
