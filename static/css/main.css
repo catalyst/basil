@@ -62,6 +62,7 @@ a:hover, a:visited, a:link {
     padding: 16px 12px;
     background: #F8FFF0;
     border: 2px solid #2e8539;
+    -moz-border-radius: 4px;
     border-radius: 4px;
     max-width: 500px;
     margin-bottom: 20px;
@@ -151,6 +152,12 @@ a:hover, a:visited, a:link {
 #create-form label.error,
 #create-form .errors {
     color: red;
+}
+#create-form .error-container.has-errors {
+    margin: 10px 0;
+    border: 1px solid red;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
 }
 
 /* Other */

@@ -126,6 +126,7 @@ function create_project(){
             // sort errors so Project Name first, then rest by title
             // so separate out error extraction from sorting from creating list items
             var result = JSON.parse(jqXHR.responseText);
+            $('#create-form .errors').removeClass('has-errors');
             var project_name_errors = [];
             var other_field_errors = [];
             var other_errors = [];
@@ -167,14 +168,13 @@ function create_project(){
                     $(li).text(other_error);
                 }));
             })
+            if ((field_errors.length + other_errors.length) > 0) {
+                $('#create-form .error-container').addClass('has-errors');
+            }
         });
 };
 
 function build_create_dialog(template_name, response){
-    /*
-    TODO - handle validation side of things from user point of view and stopping submission of faulty data
-    (client side is enough - the user can feel free to destroy their own system through hacking ;-))
-    */
     dialog_div = $("#gen-dialog");
     dialog_div.html(""); // clear it first
     var i = 0;
@@ -186,8 +186,12 @@ function build_create_dialog(template_name, response){
         $(p).html("Configure your <span class='tpl-name'>" + template_name
             + "</span> project by answering the following questions:");
     }));
-    form.append(make_el("ul", ["errors"], function(ul){
-        $(ul).html("");
+    form.append(make_el("div", ["error-container"], function(error_div_container){
+        $(error_div_container).append(
+            make_el("ul", ["errors"], function(ul){
+                 $(ul).html("");
+            })
+        );
     }));
     fieldnames = [];
     for (var fieldname in response){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
@@ -204,7 +208,7 @@ function build_create_dialog(template_name, response){
         var description = field_det.description;
         var type = field_det.type;
         var field_default = field_det.default;
-        var validators = field_det.validators; // TODO wire up front-end validation - see http://jqueryui.com/dialog/#modal-form
+        var validators = field_det.validators;
         form.append(make_el("label", ["dialog-label"], function(label){
             $(label).text(title + ":");
             $(label).attr("for", fieldname)
