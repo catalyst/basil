@@ -18,7 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from importlib import import_module
+from validation import validator
 
+@validator('must be the name of a unique python module.')
 def validate_unique_python_module(value):
     try:
         import_module(value)
@@ -30,6 +32,7 @@ def validate_unique_python_module(value):
     else:
         return False
 
+@validator('must be a valid username.')
 def validate_username(value):
     return True
 

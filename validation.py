@@ -19,12 +19,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
 
+def validator(validation_message):
+    def validation_decorator(boolean_validator):
+        def error_message_validator(field_name, value):
+            return None if boolean_validator(value) else validation_message
+        return error_message_validator
+    return validation_decorator
+
+@validator('invalid directory name.')
 def validate_directory(value):
     """
     Returns True if value is a valid name for a directory.
     """
     return bool(re.search(r'^[A-z][A-z0-9_]+$', value))
 
+@validator('invalid email address.')
 def validate_email(value):
     """
     Returns True if value is a valid email address.
@@ -32,6 +41,7 @@ def validate_email(value):
     """
     return bool(re.search(r'^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$', value, re.IGNORECASE))
 
+@validator('field cannot be left blank')
 def validate_nonempty(value):
     """
     Returns True if value is not empty.

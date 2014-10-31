@@ -144,6 +144,15 @@ a:hover, a:visited, a:link {
 #project-statuses {
     margin-bottom: 400px; /* so cursor over body shows hourglass even if mouse lower down in screen */
 }
+/* Project creation dialog */
+#create-form input.error {
+    border: 1px solid red;
+}
+#create-form label.error,
+#create-form .errors {
+    color: red;
+}
+
 /* Other */
 #settings-form {
     width: 400px;

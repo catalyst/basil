@@ -101,8 +101,12 @@ function setup_template_form(){
 }
 
 function create_project(){
+    // Clear errors.
+    $('#create-form input, #create-form label').removeClass('error');
+    $('#create-form .errors').html('');
+
     var template_name = $("#templates-dropdown").find('option:selected').val();
-    var create_data = $("#create_form").serializeObject();
+    var create_data = $("#create-form").serializeObject();
     create_data["template_name"] = template_name;
     $.ajax({type: "POST",
             url: "create-project",
@@ -110,15 +114,37 @@ function create_project(){
             data: create_data
         })
         .done(function(response){
-            ok_dialog("Success", "Successfully made \"" 
+            ok_dialog("Success", "Successfully made \""
                 + create_data.project_name + "\"");
             get_project_statuses();
         })
         .fail(function(jqXHR, textStatus, errorThrown){
-            var title = "Problem making project";
-            var msg = "Problem making \"" + create_data.project_name 
-                + "\" project.<br><br>" + jqXHR.responseText;
-            ok_dialog(title, msg);
+            var result = JSON.parse(jqXHR.responseText);
+            if (typeof result === 'object') {
+                // If the error response is an object, then it is a mapping of
+                // fields to error messages.
+                var errors = result;
+                for (var field in errors) {
+                    if (errors.hasOwnProperty(field)) {
+                        // Add error classes to the field.
+                        $('#create-form input#' + field).addClass('error');
+                        $('#create-form label[for=' + field + ']').addClass('error');
+
+                        // Add an error message to the list of errors.
+                        var label = $('#create-form label[for=' + field + ']').text();
+                        $('#create-form .errors').append(make_el('li', [], function(li) {
+                            $(li).text(label + ' ' + errors[field]);
+                        }));
+                    }
+                }
+            }
+            else {
+                // If result is not an object, then it is simplay an error
+                // message to add to the list of errors.
+                $('#create-form .errors').append(make_el('li', [], function(li) {
+                    $(li).text(result);
+                }));
+            }
         });
 };
 
@@ -130,12 +156,15 @@ function build_create_dialog(template_name, response){
     dialog_div = $("#gen-dialog");
     var i = 0;
     dialog_div.append(make_el("form", [], function(form){
-        $(form).attr("id", "create_form");
+        $(form).attr("id", "create-form");
     }));
-    var form = $("#create_form");
+    var form = $("#create-form");
     form.append(make_el("p", ["instructions"], function(p){
-        $(p).html("Configure your <span class='tpl-name'>" + template_name 
+        $(p).html("Configure your <span class='tpl-name'>" + template_name
             + "</span> project by answering the following questions:");
+    }));
+    form.append(make_el("ul", ["errors"], function(ul){
+        $(ul).html("");
     }));
     fieldnames = [];
     for (var fieldname in response){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
@@ -145,7 +174,7 @@ function build_create_dialog(template_name, response){
     };
     fieldnames.sort();
     fieldnames.unshift("project_name");
-    console.log(fieldnames);
+    //console.log(fieldnames);
     _.each(fieldnames, function(fieldname){ // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
         var field_det = response[fieldname];
         var title = field_det.title;
@@ -176,7 +205,7 @@ function build_create_dialog(template_name, response){
         modal: true,
         dialogClass: "no-close",
         buttons: {
-            "Create a project": create_project,
+            "Create project": create_project,
             Cancel: function() {
                 dialog_div.dialog("close");
         }
@@ -201,7 +230,7 @@ function open_create_project(){
         })
         .fail(function(jqXHR, error, ex){
             var title = "Problem getting field details for template";
-            var msg = "Problem getting field details for \"" + template_name 
+            var msg = "Problem getting field details for \"" + template_name
                 + "\" template.<br><br>" + ex;
             ok_dialog(title, msg);
         });
@@ -378,7 +407,7 @@ function project_reset(project_directory, project_name){
         get_project_statuses, enable_all_btns);
     show_progress(project_name, 10, "resetting", "Resetting");
 };
-    
+
 function confirm_destroy(project_directory, project_name) {
     var dialog_div = $("#gen-dialog");
     dialog_div.html("<p>Destroying your project is irreversible. "
@@ -584,12 +613,12 @@ function display_project_statuses(response){
                                 }));
                                 id++;
                                 add_std_button(td, id, ["action_button"], "Stop", project_stop,
-                                    status);                                    
+                                    status);
                                 if (status["allow_destroy"]){
                                     id++;
                                     add_std_button(td, id, ["float-right", "action_button"],
                                         "Destroy", project_destroy, status);
-                                }  
+                                }
                                 id++;
                                 add_std_button(td, id, ["float-right", "action_button"],
                                     "Reset", project_reset, status);
@@ -607,8 +636,8 @@ function get_project_statuses(){
     Can't accept arguments - otherwise messes up setInterval.
     */
     $("body").css("cursor", "progress");
-    $.ajax({type: "GET", 
-        url: "get-statuses", 
+    $.ajax({type: "GET",
+        url: "get-statuses",
         dataType: "json"})
         .done(function(response){
             if(response != ""){
@@ -624,7 +653,7 @@ function get_project_statuses(){
             ok_dialog("Problem with project data",
                 "Unable to access project status data. Original problem: "
                 + jqXHR.responseText);
-            $("#loading-projects").text("Problem accessing projects information. " 
+            $("#loading-projects").text("Problem accessing projects information. "
                 + jqXHR.responseText);
         });
 };

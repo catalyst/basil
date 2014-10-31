@@ -74,7 +74,7 @@ def get_template_fields():
     template_name = bottle.request.GET.get(keys.PROJECT_TEMPLATE_NAME)
     fields = core.get_fields(template_name)
     return json.dumps(fields)
-    
+
 @bottle.post('/create-project')
 def create_project():
     template_name = bottle.request.forms.get(keys.PROJECT_TEMPLATE_NAME)
@@ -83,8 +83,8 @@ def create_project():
     try:
         core.create(template_name, values)
     except Exception as e:
-        msg = "Failed to make project. Orig error: {}".format(e)
-        return bottle.HTTPError(status=500, exception=msg)
+        errors = json.dumps(e.args[0])
+        return bottle.HTTPError(status=500, exception=errors)
     return json.dumps("Successfully created project \"{}\""
         .format(values[keys.PROJECT_NAME]))
 

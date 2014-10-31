@@ -239,45 +239,52 @@ def get_ports(template_name):
             current_port += 1
     return assigned_ports
 
-def validate_field(template_name, field_name, value):
+def validate_fields(template_name, values):
     """
-    Call each validator defined for the field in the template with the given
-    value.
+    Call each validator defined for the fields in the template with the given
+    values.
 
     Note - validators are not defined in the config.json file if they are
     default fields.
 
-    If any validator returns False, return False, otherwise, return True.
+    If any validator returns an error message, add it to the errors dicitionary,
+    which is returned at the end of the function.
 
     For each validator named x, look for the function validator_x, first in the
     template's lib.py, then in basil's validators.py.
     """
+    errors = {}
     config = template_load_config(template_name)
-    if field_name in config[keys.TEMPLATE_CONFIG_FIELDS]:
-        try:
-            validators = (config[keys.TEMPLATE_CONFIG_FIELDS][field_name]
-                [keys.TEMPLATE_FIELD_VALIDATORS])
-        except KeyError:
-            raise Exception("Unable to locate validator details for \"{}\""
-                .format(field_name))
-    else:
-        validators = get_default_field_validators(field_name)
     template_lib = template_load_lib(template_name)
-    for validator_name in ['validate_' + validator for validator in validators]:
-        if template_lib:
-            validate_func = template_lib.__dict__.get(validator_name)
-            if validate_func:
-                if not validate_func(value):
-                    return False
-                continue
-        validate_func = validation.__dict__.get(validator_name)
-        if validate_func:
-            if not validate_func(value):
-                return False
+    for field_name, value in values.items():
+        if field_name in config[keys.TEMPLATE_CONFIG_FIELDS]:
+            try:
+                validators = (config[keys.TEMPLATE_CONFIG_FIELDS][field_name]
+                [keys.TEMPLATE_FIELD_VALIDATORS])
+            except KeyError:
+                raise Exception("Unable to locate validator details for \"{}\""
+                .format(field_name))
         else:
-            raise Exception('Validation function not found: {}'.format(
+            validators = get_default_field_validators(field_name)
+        for validator_name in ['validate_' + validator for validator in validators]:
+            if template_lib:
+                validate_func = template_lib.__dict__.get(validator_name)
+                if validate_func:
+                    error = validate_func(field_name, value)
+                    if error != None:
+                        errors[field_name] = error
+                        break
+                    continue
+            validate_func = validation.__dict__.get(validator_name)
+            if validate_func:
+                error = validate_func(field_name, value)
+                if error != None:
+                    errors[field_name] = error
+                    break
+            else:
+                raise Exception('Validation function not found: {}'.format(
                 validator_name))
-    return True
+    return errors
 
 def process_rewrite(path, values):
     """
@@ -360,10 +367,9 @@ def create(template_name, values):
             "to False later!!! " + "*"*20)
         return
     # Validation
-    for field_name, value in values.items():
-        if not validate_field(template_name, field_name, value):
-            raise Exception("Validation problem for \"{}\" field"
-                .format(field_name))
+    errors = validate_fields(template_name, values)
+    if errors:
+      raise Exception(errors)
     # Post-processing
     template_lib = template_load_lib(template_name)
     if template_lib:
