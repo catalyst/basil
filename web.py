@@ -78,8 +78,9 @@ def get_template_fields():
 @bottle.post('/create-project')
 def create_project():
     template_name = bottle.request.forms.get(keys.PROJECT_TEMPLATE_NAME)
+    print(bottle.request.forms)
     values = {item: bottle.request.forms[item] for item in bottle.request.forms}
-    del values[keys.PROJECT_TEMPLATE_NAME]
+    del values[keys.PROJECT_TEMPLATE_NAME] # don't handle template name twice
     try:
         core.create(template_name, values)
     except Exception as e:

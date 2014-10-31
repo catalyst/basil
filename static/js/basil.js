@@ -81,6 +81,10 @@ $.fn.serializeObject = function()
     return o;
 };
 
+function starts_with(str, startstr){
+    return str.lastIndexOf(startstr, 0) === 0;
+}
+
 function setup_template_form(){
     $(function(){
         $("#templates-dropdown").trigger('change');
@@ -119,7 +123,12 @@ function create_project(){
             get_project_statuses();
         })
         .fail(function(jqXHR, textStatus, errorThrown){
+            // sort errors so Project Name first, then rest by title
+            // so separate out error extraction from sorting from creating list items
             var result = JSON.parse(jqXHR.responseText);
+            var project_name_errors = [];
+            var other_field_errors = [];
+            var other_errors = [];
             if (typeof result === 'object') {
                 // If the error response is an object, then it is a mapping of
                 // fields to error messages.
@@ -129,22 +138,35 @@ function create_project(){
                         // Add error classes to the field.
                         $('#create-form input#' + field).addClass('error');
                         $('#create-form label[for=' + field + ']').addClass('error');
-
                         // Add an error message to the list of errors.
                         var label = $('#create-form label[for=' + field + ']').text();
-                        $('#create-form .errors').append(make_el('li', [], function(li) {
-                            $(li).text(label + ' ' + errors[field]);
-                        }));
+                        var field_error = label + ' ' + errors[field];
+                        if (starts_with(label, "Project name")){
+                            project_name_errors.push(field_error);
+                        } else {
+                            other_field_errors.push(field_error);
+                        }
                     }
                 }
             }
             else {
-                // If result is not an object, then it is simplay an error
+                // If result is not an object, then it is simply an error
                 // message to add to the list of errors.
-                $('#create-form .errors').append(make_el('li', [], function(li) {
-                    $(li).text(result);
-                }));
+                other_errors.push(result);
             }
+            // Sort field_errors.
+            other_field_errors.sort();
+            var field_errors = project_name_errors.concat(other_field_errors);
+            _.each(field_errors, function(field_error){
+                $('#create-form .errors').append(make_el('li', [], function(li) {
+                    $(li).text(field_error);
+                }));
+            })
+            _.each(other_errors, function(other_error){
+                $('#create-form .errors').append(make_el('li', [], function(li) {
+                    $(li).text(other_error);
+                }));
+            })
         });
 };
 
@@ -154,6 +176,7 @@ function build_create_dialog(template_name, response){
     (client side is enough - the user can feel free to destroy their own system through hacking ;-))
     */
     dialog_div = $("#gen-dialog");
+    dialog_div.html(""); // clear it first
     var i = 0;
     dialog_div.append(make_el("form", [], function(form){
         $(form).attr("id", "create-form");

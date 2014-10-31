@@ -73,7 +73,7 @@ ProjectInfo = namedtuple('ProjectInfo', ('project_name', 'template_name',
     'template_version', 'ports', 'allow_destroy'))
 
 default_fields = {
-    'project_name': { # make field names dict keys so easy to override
+    keys.PROJECT_NAME: { # make field names dict keys so easy to override
          keys.TEMPLATE_FIELD_TYPE: 'text',
          keys.TEMPLATE_FIELD_TITLE: 'Project name',
          keys.TEMPLATE_FIELD_DESCRIPTION: 'The name of this project',
@@ -186,8 +186,9 @@ def get_templates():
 
 def get_fields(template_name):
     """
-    Given the machine name of a template, returns a list of Field tuples that
-    are defined for that template.
+    Given the machine name of a template, returns a dictionary with the key
+    being the field name and the values being a dictionary of field attributes
+    that are defined for that template.
 
     Always includes the fields in default_fields, but allow overriding of those
     from templates.
@@ -247,7 +248,7 @@ def validate_fields(template_name, values):
     Note - validators are not defined in the config.json file if they are
     default fields.
 
-    If any validator returns an error message, add it to the errors dicitionary,
+    If any validator returns an error message, add it to the errors dictionary,
     which is returned at the end of the function.
 
     For each validator named x, look for the function validator_x, first in the
@@ -347,7 +348,8 @@ def create_project_config(template_name, values, ports, project_directory):
 
 def create(template_name, values):
     """
-    Values should be a dictionary, mapping field names to string values. E.g. { 'project_name': 'My New Project' }
+    Values should be a dictionary, mapping field names to string values.
+    E.g. { 'project_name': 'My New Project' }
     This function:
     * Performs final validation on all of the field values.
     * Performs any post-processing of field values defined by the template.
