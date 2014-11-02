@@ -125,6 +125,9 @@ function create_project(){
         .fail(function(jqXHR, textStatus, errorThrown){
             // sort errors so Project Name first, then rest by title
             // so separate out error extraction from sorting from creating list items
+            /*
+            TODO - Sort according to order of input items in html (and then any other error items).
+            */
             var result = JSON.parse(jqXHR.responseText);
             var project_name_errors = [];
             var other_field_errors = [];
