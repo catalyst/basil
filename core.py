@@ -44,6 +44,7 @@ import os
 from os.path import join
 import re
 import shutil
+import http.client
 import subprocess
 import sys
 from threading import Thread
@@ -408,6 +409,20 @@ def create(template_name, values):
         raise Exception("Unable to create project configuration file ({}) "
             "so project not created.".format(keys.BASIL_INTERNAL_CONFIG))
 
+def get_project_info(project_name):
+    try:
+        project_config = project_load_config(project_name)
+        template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
+        template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
+        ports = project_config[keys.PROJECT_PORTS]
+        allow_destroy = project_config.get(keys.PROJECT_ALLOW_DESTROY,
+            True)
+        return ProjectInfo(project_name, template_name, template_version, ports,
+        allow_destroy) # @Later - ensure anything expected ends up in the schema for testing config.json
+    except Exception as e:
+        raise Exception("Unable to get project details for \"{}\" "
+            "project. {}".format(project_name, e))
+
 def get_project_infos():
     """
     Returns a list of ProjectInfos for each project in projects_directory.
@@ -417,18 +432,7 @@ def get_project_infos():
     project_names = [x for x in os.listdir(projects_dir)
         if os.path.isdir(join(projects_dir, x))]
     for project_name in project_names:
-        try:
-            project_config = project_load_config(project_name)
-            template_name = project_config[keys.PROJECT_TEMPLATE_NAME]
-            template_version = project_config[keys.PROJECT_TEMPLATE_VERSION]
-            ports = project_config[keys.PROJECT_PORTS]
-            allow_destroy = project_config.get(keys.PROJECT_ALLOW_DESTROY,
-                True)
-            project_infos.append(ProjectInfo(project_name, template_name,
-                template_version, ports, allow_destroy)) # @Later - ensure anything expected ends up in the schema for testing config.json
-        except Exception as e:
-            raise Exception("Unable to get project details for \"{}\" "
-                "project. {}".format(project_name, e))
+        project_infos.append(get_project_info(project_name))
     return project_infos
 
 def get_project_statuses():
@@ -847,3 +851,20 @@ def destroy_project(project_directory):
     command_progress = run_vagrant_cmd(command_list=["vagrant", "destroy", "--force"],
         project_directory=project_directory, blocking=True, callback=callback)
     return command_progress
+
+def check_project_ports(project_name):
+  """
+  Returns a list of project ports that are unreachable.
+  """
+  project = get_project_info(project_name)
+  failed = []
+  for name, port in project.ports.items():
+      try:
+          connection = http.client.HTTPConnection('localhost', port)
+          connection.request("HEAD", "/")
+          connection.getresponse()
+      except:
+          failed.append(name)
+      finally:
+          connection.close()
+  return failed
