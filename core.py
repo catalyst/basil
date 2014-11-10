@@ -290,17 +290,22 @@ def validate_fields(template_name, values):
 
 def process_rewrite(path, values):
     """
+    Walk through every line in the given file, replacing basil tags with the
+    given values.
     values dict -- may have numbers (e.g. port) as vals
     """
+    # Iterate over every line in the file, using print() to rewrite each line.
+    # See: http://pymotw.com/2/fileinput/#in-place-filtering
     with fileinput.input(files=(path), inplace=True) as f:
         for line in f:
             for field_name, value in values.items():
                 orig = basil_tag_start + field_name + basil_tag_end
                 line = line.replace(orig, str(value))
-            print(line, end="")
+            print(line, end="") # note -- print operates differently in context
 
 def process_rename(path, values):
     """
+    Replace basil tags in the given path with the given values.
     values dict -- may have numbers (e.g. port) as vals
     """
     directory, name = os.path.split(path)
@@ -359,8 +364,6 @@ def create(template_name, values):
     * "Fill in the blanks" of the new project directory with values.
     * Place a '.basil' json file in the project, containing values, the template name, and an initial state?
     """
-    #print(template_name)
-    #print(values)
     # testing
     skip_creation = False
     if skip_creation:

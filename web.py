@@ -78,7 +78,6 @@ def get_template_fields():
 @bottle.post('/create-project')
 def create_project():
     template_name = bottle.request.forms.get(keys.PROJECT_TEMPLATE_NAME)
-    print(bottle.request.forms)
     values = {item: bottle.request.forms[item] for item in bottle.request.forms}
     del values[keys.PROJECT_TEMPLATE_NAME] # don't handle template name twice
     try:
@@ -90,7 +89,7 @@ def create_project():
         .format(values[keys.PROJECT_NAME]))
 
 @bottle.error(500)
-def error500(error): # don't want the default page
+def error500(error): # don't want the default error 500 page
     return error.exception
 
 @bottle.route('/get-statuses')

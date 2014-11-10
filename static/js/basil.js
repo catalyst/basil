@@ -89,7 +89,7 @@ function setup_template_form(){
     $(function(){
         $("#templates-dropdown").trigger('change');
     });
-    $("#templates-dropdown").change(function(){
+    $("#templates-dropdown").on('change keyup', function(){
         var template_name = $(this).val();
         var option = $(this).find("option[value='" + template_name + "']");
         var template_title = option.attr("data-title");
@@ -106,6 +106,7 @@ function setup_template_form(){
 
 function create_project(){
     // Clear errors.
+
     $('#create-form input, #create-form label').removeClass('error');
     $('#create-form .errors').html('');
 
@@ -246,6 +247,14 @@ function build_create_dialog(template_name, response){
     },
     close: function() {
             form.remove();
+        }
+    });
+    // Anytime we use the jQuery dialog to submit a form, we need to prevent the
+    // default behaviour on the keypress.
+    dialog_div.keypress(function(e){
+        if (e.keyCode == $.ui.keyCode.ENTER) {
+            e.preventDefault() // otherwise jumps us to /?project_name=myname
+            create_project();
         }
     });
     return dialog_div;
@@ -728,7 +737,8 @@ var PortsChecker = {
                .done(function(response){
                     if (response.unavailable_ports.length > 0) {
                         self.stop(project_name);
-                        alert('Ports inaccessible on ' + project_name + ': ' + response.unavailable_ports.join(', '));
+                        alert('Ports inaccessible on ' + project_name + ': '
+                          + response.unavailable_ports.join(', '));
                     }
                 });
             }
