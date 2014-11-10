@@ -178,6 +178,12 @@ def get_command_progress():
             "Orig error: {}".format(e))
     return payload
 
+@bottle.route('/check-ports', method="GET")
+def check_ports():
+  project_name = bottle.request.query.get(keys.PROJECT_NAME)
+  unavailable_ports = core.check_project_ports(project_name)
+  return {'unavailable_ports': unavailable_ports}
+
 def run_server():
     debug = True
     try:

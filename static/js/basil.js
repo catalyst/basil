@@ -137,21 +137,25 @@ function create_project(){
                 // If the error response is an object, then it is a mapping of
                 // fields to error messages.
                 var errors = result;
-                for (var field in errors) {
-                    if (errors.hasOwnProperty(field)) {
-                        // Add error classes to the field.
-                        $('#create-form input#' + field).addClass('error');
-                        $('#create-form label[for=' + field + ']').addClass('error');
-                        // Add an error message to the list of errors.
-                        var label = $('#create-form label[for=' + field + ']').text();
-                        var field_error = label + ' ' + errors[field];
-                        if (starts_with(label, "Project name")){
-                            project_name_errors.push(field_error);
-                        } else {
-                            other_field_errors.push(field_error);
-                        }
+                var fieldnames = [];
+                for (var field in errors) { // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
+                    if (errors.hasOwnProperty(field) && (field != "project_name")) {
+                        fieldnames.push(field);
                     }
                 }
+                fieldnames.sort();
+                fieldnames.unshift("project_name");
+                _.each(fieldnames, function(field) {
+                    // Add error classes to the field.
+                    $('#create-form input#' + field).addClass('error');
+                    $('#create-form label[for=' + field + ']').addClass('error');
+
+                    // Add an error message to the list of errors.
+                    var label = $('#create-form label[for=' + field + ']').text();
+                    $('#create-form .errors').append(make_el('li', [], function(li) {
+                        $(li).text(label + ' ' + errors[field]);
+                    }));
+                });
             }
             else {
                 // If result is not an object, then it is simply an error
@@ -286,7 +290,7 @@ function project_action(project_directory, project_name, url,
             }
         })
         .fail(function(jqXHR, error, ex){
-            if(success_handler){
+            if(fail_handler){
                 fail_handler();
             };
             var title = "Problem " + action_lbl_doing + " \"" + project_name
@@ -421,20 +425,29 @@ function project_start(project_directory, project_name){
     function update(){
         get_project_statuses();
         enable_all_btns();
+        PortsChecker.start(project_name);
     };
     show_progress(project_name, 25, "starting", "Starting", update);
 };
 
 function project_stop(project_directory, project_name){
+    PortsChecker.stop(project_name);
     project_action(project_directory, project_name,
         "project-stop", "stop", "stopping",
-        get_project_statuses, enable_all_btns);
+        get_project_statuses, function() {
+            enable_all_btns();
+            PortsChecker.start(project_name);
+        });
 };
 
 function project_reset(project_directory, project_name){
+    PortsChecker.stop(project_name);
     project_action(project_directory, project_name,
         "project-reset", "reset", "resetting",
-        get_project_statuses, enable_all_btns);
+        get_project_statuses, function() {
+            enable_all_btns();
+            PortsChecker.start(project_name);
+        });
     show_progress(project_name, 10, "resetting", "Resetting");
 };
 
@@ -460,9 +473,12 @@ function confirm_destroy(project_directory, project_name) {
 		        text: "Yes - Destroy!",
 		        click: function() {
 			        $( this ).dialog("close");
-                    project_action(project_directory, project_name,
-                        "project-destroy", "destroy", "destroying",
-                        get_project_statuses, enable_all_btns)
+              PortsChecker.stop(project_name);
+              project_action(project_directory, project_name, "project-destroy",
+                  "destroy", "destroying", get_project_statuses, function() {
+                      enable_all_btns();
+                      PortsChecker.start(project_name);
+                  })
 		        }
 	        }
         ]
@@ -604,6 +620,7 @@ function display_project_statuses(response){
                                 }
                                 break;
                             case "Running":
+                                PortsChecker.start(status["project_name"]);
                                 // View, Code, Command, Stop, Reset, Destroy
                                 $(td).append(make_el("input", ["action_button"], function(btn){
                                     $(btn).attr({
@@ -687,3 +704,42 @@ function get_project_statuses(){
                 + jqXHR.responseText);
         });
 };
+
+var PortsChecker = {
+
+    interval: 5000,
+    tasks: {},
+    paused: false,
+
+    start: function(project_name) {
+        if (project_name in this.tasks) {
+            return;
+        }
+        var self = this;
+        this.tasks[project_name] = setInterval(function() {
+            if (!self.paused) {
+                $.ajax({type: "GET",
+                    url: "check-ports",
+                    data: {
+                        project_name: project_name,
+                    },
+                    dataType: "json",
+                })
+               .done(function(response){
+                    if (response.unavailable_ports.length > 0) {
+                        self.stop(project_name);
+                        alert('Ports inaccessible on ' + project_name + ': ' + response.unavailable_ports.join(', '));
+                    }
+                });
+            }
+        }, this.interval);
+    },
+
+    stop: function(project_name) {
+        if (project_name in this.tasks) {
+            clearInterval(this.tasks[project_name]);
+            delete this.tasks[project_name];
+        }
+    },
+
+}
