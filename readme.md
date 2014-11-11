@@ -34,8 +34,8 @@ beats purity.
 
 ### Template Folder Names
  
-A general pattern is framework name then versions then variants - all lower case 
-and joined with underscores. Dots and hyphens are OK. Some examples:
+A general pattern is framework name, then versions, then variants - all lower 
+case and joined with underscores. Dots and hyphens are OK. Some examples:
 
 * drupal_7
 * drupal_7_catalyst # Drupal 7 with the configuration preferred by Catalyst
@@ -48,11 +48,12 @@ But it is OK to use another label if it makes sense e.g.
 
 ### Template Display Names
 
-As for template folder names but underscores can be replaced with spaces, and
-variable case is OK. There is no need to separate sections. Some examples:
+As for template folder names but underscores can be replaced with spaces and
+variable case is OK. There is no need to separate sections and no need to use v for version - brevity makes it easier to choose templates from the Basil 
+dropdown. Some examples:
 
 * Drupal 7.x
 * Drupal 7 Catalyst
-* Flask v0.10.1 Python 2.7
-* Django v1.7 Python 3.4
+* Flask 0.10.1 Python 2.7
+* Django 1.7 Python 3.4
 * LAMP Stack (Basic)
